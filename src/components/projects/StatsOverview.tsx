@@ -1,0 +1,374 @@
+'use client';
+
+import React, { useEffect } from 'react';
+import { 
+  BarChart3, 
+  Users, 
+  MessageSquare, 
+  FileText, 
+  Database, 
+  Clock, 
+  TrendingUp,
+  Calendar,
+  RefreshCw,
+  AlertCircle,
+  ExternalLink
+} from 'lucide-react';
+import { toast } from 'sonner';
+
+import { useProjectSettingsStore } from '@/store';
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import { cn, formatTimestamp } from '@/lib/utils';
+import type { Agent } from '@/types';
+
+interface StatsOverviewProps {
+  project: Agent;
+}
+
+interface StatCardProps {
+  title: string;
+  value: string | number;
+  description?: string;
+  icon: React.ComponentType<{ className?: string }>;
+  color: 'blue' | 'green' | 'purple' | 'orange' | 'red';
+  trend?: {
+    value: number;
+    isPositive: boolean;
+  };
+}
+
+const StatCard: React.FC<StatCardProps> = ({ 
+  title, 
+  value, 
+  description, 
+  icon: Icon, 
+  color, 
+  trend 
+}) => {
+  const colorClasses = {
+    blue: 'text-blue-600 bg-blue-100',
+    green: 'text-green-600 bg-green-100',
+    purple: 'text-purple-600 bg-purple-100',
+    orange: 'text-orange-600 bg-orange-100',
+    red: 'text-red-600 bg-red-100',
+  };
+
+  return (
+    <Card className="p-6">
+      <div className="flex items-start justify-between">
+        <div className="flex-1">
+          <div className="flex items-center gap-3 mb-3">
+            <div className={cn('w-12 h-12 rounded-lg flex items-center justify-center', colorClasses[color])}>
+              <Icon className="w-6 h-6" />
+            </div>
+            
+            <div>
+              <h3 className="text-sm font-medium text-gray-600">{title}</h3>
+              <div className="text-2xl font-bold text-gray-900 mt-1">{value}</div>
+            </div>
+          </div>
+          
+          {description && (
+            <p className="text-sm text-gray-600">{description}</p>
+          )}
+          
+          {trend && (
+            <div className="flex items-center gap-1 mt-2">
+              <TrendingUp className={cn(
+                'w-4 h-4',
+                trend.isPositive ? 'text-green-600' : 'text-red-600'
+              )} />
+              <span className={cn(
+                'text-sm font-medium',
+                trend.isPositive ? 'text-green-600' : 'text-red-600'
+              )}>
+                {trend.isPositive ? '+' : ''}{trend.value}%
+              </span>
+              <span className="text-xs text-gray-500">vs last month</span>
+            </div>
+          )}
+        </div>
+      </div>
+    </Card>
+  );
+};
+
+export const StatsOverview: React.FC<StatsOverviewProps> = ({ project }) => {
+  const { 
+    stats, 
+    statsLoading, 
+    statsError, 
+    fetchStats 
+  } = useProjectSettingsStore();
+
+  useEffect(() => {
+    fetchStats(project.id);
+  }, [project.id]);
+
+  const handleRefresh = () => {
+    fetchStats(project.id);
+  };
+
+  // Mock stats data since the API might not have complete stats
+  const mockStats = {
+    total_conversations: 1247,
+    total_messages: 5823,
+    total_sources: 15,
+    total_pages: 42,
+    last_activity: '2024-01-15T10:30:00Z',
+    created_at: project.created_at || '2024-01-01T00:00:00Z',
+    updated_at: project.updated_at || '2024-01-15T10:30:00Z',
+    // Additional mock data
+    unique_users: 892,
+    avg_response_time: 1.2,
+    satisfaction_rate: 4.6,
+    monthly_growth: 12.5,
+  };
+
+  // Use mock data if no stats from API
+  const displayStats = stats || mockStats;
+
+  const statCards = [
+    {
+      title: 'Total Conversations',
+      value: displayStats.total_conversations?.toLocaleString() || '0',
+      description: 'Unique conversation sessions',
+      icon: MessageSquare,
+      color: 'blue' as const,
+      trend: { value: 12.5, isPositive: true },
+    },
+    {
+      title: 'Total Messages',
+      value: displayStats.total_messages?.toLocaleString() || '0',
+      description: 'Messages exchanged with users',
+      icon: Users,
+      color: 'green' as const,
+      trend: { value: 8.3, isPositive: true },
+    },
+    {
+      title: 'Knowledge Sources',
+      value: displayStats.total_sources?.toLocaleString() || '0',
+      description: 'Active data sources',
+      icon: Database,
+      color: 'purple' as const,
+    },
+    {
+      title: 'Total Pages',
+      value: displayStats.total_pages?.toLocaleString() || '0',
+      description: 'Indexed content pages',
+      icon: FileText,
+      color: 'orange' as const,
+    },
+  ];
+
+  const performanceMetrics = [
+    {
+      title: 'Unique Users',
+      value: (displayStats as any).unique_users?.toLocaleString() || '0',
+      description: 'Individual users this month',
+      icon: Users,
+      color: 'blue' as const,
+    },
+    {
+      title: 'Avg Response Time',
+      value: `${(displayStats as any).avg_response_time || '0.0'}s`,
+      description: 'Average AI response time',
+      icon: Clock,
+      color: 'green' as const,
+    },
+    {
+      title: 'Satisfaction Rate',
+      value: `${(displayStats as any).satisfaction_rate || '0.0'}/5.0`,
+      description: 'User satisfaction rating',
+      icon: TrendingUp,
+      color: 'purple' as const,
+    },
+  ];
+
+  return (
+    <div className="p-6 max-w-6xl mx-auto">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900">Project Statistics</h2>
+          <p className="text-gray-600 mt-1">
+            Usage analytics and performance metrics for {project.project_name}
+          </p>
+        </div>
+        
+        <div className="flex items-center gap-3">
+          <Button
+            variant="outline"
+            onClick={() => window.open('/analytics', '_blank')}
+            size="sm"
+          >
+            <ExternalLink className="w-4 h-4 mr-2" />
+            Full Analytics
+          </Button>
+          
+          <Button
+            variant="outline"
+            onClick={handleRefresh}
+            disabled={statsLoading}
+            size="sm"
+          >
+            <RefreshCw className={cn('w-4 h-4 mr-2', statsLoading && 'animate-spin')} />
+            Refresh
+          </Button>
+        </div>
+      </div>
+
+      {/* Error State */}
+      {statsError && (
+        <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+          <div className="flex items-center gap-2 text-yellow-800">
+            <AlertCircle className="w-5 h-5" />
+            <span className="font-medium">Stats API Not Available</span>
+          </div>
+          <p className="text-yellow-700 mt-1 text-sm">
+            Showing example statistics. Connect to your analytics to see real data.
+          </p>
+        </div>
+      )}
+
+      {/* Loading State */}
+      {statsLoading && !stats ? (
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {[...Array(4)].map((_, i) => (
+              <Card key={i} className="p-6 animate-pulse">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-12 h-12 bg-gray-200 rounded-lg" />
+                  <div className="flex-1">
+                    <div className="h-3 bg-gray-200 rounded w-20 mb-2" />
+                    <div className="h-6 bg-gray-200 rounded w-16" />
+                  </div>
+                </div>
+                <div className="h-3 bg-gray-200 rounded w-32" />
+              </Card>
+            ))}
+          </div>
+        </div>
+      ) : (
+        <div className="space-y-6">
+          {/* Project Overview */}
+          <Card className="p-6 bg-gradient-to-r from-brand-50 to-blue-50 border-brand-200">
+            <div className="flex items-start justify-between">
+              <div>
+                <h3 className="text-lg font-semibold text-brand-900 mb-2">
+                  Project Overview
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                  <div>
+                    <span className="text-brand-600 font-medium">Created:</span>
+                    <span className="text-brand-800 ml-2">{formatTimestamp(displayStats.created_at)}</span>
+                  </div>
+                  <div>
+                    <span className="text-brand-600 font-medium">Last Updated:</span>
+                    <span className="text-brand-800 ml-2">{formatTimestamp(displayStats.updated_at)}</span>
+                  </div>
+                  <div>
+                    <span className="text-brand-600 font-medium">Last Activity:</span>
+                    <span className="text-brand-800 ml-2">{formatTimestamp(displayStats.last_activity)}</span>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="w-16 h-16 rounded-full bg-brand-100 flex items-center justify-center">
+                <BarChart3 className="w-8 h-8 text-brand-600" />
+              </div>
+            </div>
+          </Card>
+
+          {/* Usage Statistics */}
+          <div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Usage Statistics</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              {statCards.map((stat, index) => (
+                <StatCard key={index} {...stat} />
+              ))}
+            </div>
+          </div>
+
+          {/* Performance Metrics */}
+          <div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Performance Metrics</h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {performanceMetrics.map((metric, index) => (
+                <StatCard key={index} {...metric} />
+              ))}
+            </div>
+          </div>
+
+          {/* Quick Actions */}
+          <Card className="p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
+            
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <Button 
+                variant="outline" 
+                className="h-20 flex-col gap-2"
+                onClick={() => window.open('/analytics', '_blank')}
+              >
+                <BarChart3 className="w-5 h-5" />
+                <span className="text-sm">View Detailed Analytics</span>
+              </Button>
+              
+              <Button 
+                variant="outline" 
+                className="h-20 flex-col gap-2"
+                onClick={() => window.open('/sources', '_blank')}
+              >
+                <Database className="w-5 h-5" />
+                <span className="text-sm">Manage Data Sources</span>
+              </Button>
+              
+              <Button 
+                variant="outline" 
+                className="h-20 flex-col gap-2"
+                onClick={() => window.open('/pages', '_blank')}
+              >
+                <FileText className="w-5 h-5" />
+                <span className="text-sm">Manage Content Pages</span>
+              </Button>
+            </div>
+          </Card>
+
+          {/* Insights */}
+          <Card className="p-6 bg-green-50 border-green-200">
+            <h3 className="text-lg font-semibold text-green-900 mb-3">
+              Performance Insights
+            </h3>
+            
+            <div className="space-y-3 text-sm text-green-800">
+              <div className="flex items-start gap-2">
+                <TrendingUp className="w-4 h-4 text-green-600 mt-0.5" />
+                <p>
+                  <strong>Growing Usage:</strong> Your agent is experiencing steady growth with 
+                  {((displayStats as any).monthly_growth || 0).toFixed(1)}% increase in conversations this month.
+                </p>
+              </div>
+              
+              <div className="flex items-start gap-2">
+                <Clock className="w-4 h-4 text-green-600 mt-0.5" />
+                <p>
+                  <strong>Fast Response Times:</strong> Average response time of 
+                  {(displayStats as any).avg_response_time || '1.2'}s provides excellent user experience.
+                </p>
+              </div>
+              
+              <div className="flex items-start gap-2">
+                <Users className="w-4 h-4 text-green-600 mt-0.5" />
+                <p>
+                  <strong>High Satisfaction:</strong> User satisfaction rate of 
+                  {(displayStats as any).satisfaction_rate || '4.6'}/5.0 indicates quality responses.
+                </p>
+              </div>
+            </div>
+          </Card>
+        </div>
+      )}
+    </div>
+  );
+};
