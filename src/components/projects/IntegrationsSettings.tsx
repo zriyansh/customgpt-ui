@@ -99,131 +99,6 @@ export const IntegrationsSettings: React.FC<IntegrationsSettingsProps> = ({ proj
   const [error, setError] = useState<string | null>(null);
   const [activeView, setActiveView] = useState<'integrations' | 'webhooks' | 'api'>('integrations');
 
-  // Mock data
-  const mockIntegrations: Integration[] = [
-    {
-      id: '1',
-      name: 'Slack Integration',
-      description: 'Send notifications and messages to Slack channels',
-      category: 'communication',
-      status: 'active',
-      type: 'oauth',
-      icon: '💬',
-      provider: 'Slack',
-      connected_at: '2024-01-10T10:00:00Z',
-      last_sync: '2024-01-16T14:30:00Z',
-      config: {
-        workspace: 'my-company',
-        channel: '#general',
-        bot_token: 'xoxb-xxxxxxxxx'
-      },
-      permissions: ['channels:read', 'chat:write', 'users:read'],
-      usage_stats: {
-        requests_today: 24,
-        requests_month: 456,
-        last_used: '2024-01-16T14:30:00Z'
-      }
-    },
-    {
-      id: '2',
-      name: 'Google Analytics',
-      description: 'Track website visitor interactions and conversions',
-      category: 'analytics',
-      status: 'active',
-      type: 'api_key',
-      icon: '📊',
-      provider: 'Google',
-      connected_at: '2024-01-08T09:15:00Z',
-      last_sync: '2024-01-16T12:00:00Z',
-      config: {
-        tracking_id: 'GA-XXXXXXXXX',
-        property_id: '123456789'
-      },
-      permissions: ['analytics:read', 'analytics:write'],
-      usage_stats: {
-        requests_today: 156,
-        requests_month: 3240,
-        last_used: '2024-01-16T12:00:00Z'
-      }
-    },
-    {
-      id: '3',
-      name: 'Stripe Payments',
-      description: 'Process payments and manage subscriptions',
-      category: 'commerce',
-      status: 'error',
-      type: 'api_key',
-      icon: '💳',
-      provider: 'Stripe',
-      connected_at: '2024-01-12T15:20:00Z',
-      config: {
-        publishable_key: 'pk_test_xxxxxxxxx',
-        webhook_endpoint: 'https://api.example.com/webhooks/stripe'
-      },
-      permissions: ['payments:read', 'payments:write', 'customers:read'],
-      error_message: 'Invalid API key - please reconnect'
-    },
-    {
-      id: '4',
-      name: 'HubSpot CRM',
-      description: 'Sync contacts and track customer interactions',
-      category: 'productivity',
-      status: 'inactive',
-      type: 'oauth',
-      icon: '🏢',
-      provider: 'HubSpot',
-      config: {},
-      permissions: ['contacts:read', 'contacts:write', 'deals:read']
-    }
-  ];
-
-  const mockWebhooks: WebhookEndpoint[] = [
-    {
-      id: '1',
-      name: 'Chat Events',
-      url: 'https://api.example.com/webhooks/chat',
-      events: ['message.sent', 'conversation.started', 'conversation.ended'],
-      is_active: true,
-      created_at: '2024-01-10T10:00:00Z',
-      last_triggered: '2024-01-16T14:30:00Z',
-      request_count: 1247,
-      secret_key: 'whsec_xxxxxxxxxxxxxxxxxxxxxxxxx'
-    },
-    {
-      id: '2',
-      name: 'User Analytics',
-      url: 'https://analytics.example.com/webhook',
-      events: ['user.registered', 'user.feedback'],
-      is_active: false,
-      created_at: '2024-01-12T09:15:00Z',
-      request_count: 89,
-      secret_key: 'whsec_yyyyyyyyyyyyyyyyyyyyyyyyy'
-    }
-  ];
-
-  const mockApiAccess: ApiAccess = {
-    enabled: true,
-    rate_limit: 1000,
-    allowed_origins: ['https://example.com', 'https://app.example.com'],
-    require_auth: true,
-    api_keys: [
-      {
-        id: '1',
-        name: 'Production API',
-        key: 'cgpt_live_xxxxxxxxxxxxxxxxxxxxxxxxx',
-        permissions: ['read', 'write'],
-        created_at: '2024-01-10T10:00:00Z',
-        last_used: '2024-01-16T14:30:00Z'
-      },
-      {
-        id: '2',
-        name: 'Development API',
-        key: 'cgpt_test_yyyyyyyyyyyyyyyyyyyyyyyyy',
-        permissions: ['read'],
-        created_at: '2024-01-12T09:15:00Z'
-      }
-    ]
-  };
 
   useEffect(() => {
     loadIntegrations();
@@ -234,11 +109,8 @@ export const IntegrationsSettings: React.FC<IntegrationsSettingsProps> = ({ proj
     setError(null);
 
     try {
-      // Mock API calls
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      setIntegrations(mockIntegrations);
-      setWebhooks(mockWebhooks);
-      setApiAccess(mockApiAccess);
+      // TODO: Implement actual API call when integrations API is available
+      setError('Integration features are not yet available');
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to load integrations';
       setError(errorMessage);

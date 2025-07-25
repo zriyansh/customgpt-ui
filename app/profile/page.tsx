@@ -200,29 +200,72 @@ export default function ProfilePage() {
 
                 {/* Profile Info */}
                 <div className="flex-1">
-                  <div className="flex items-center justify-between mb-6">
+                  <div className="space-y-6">
+                    {/* Name Section */}
                     <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Full Name
+                      </label>
                       {isEditing ? (
                         <input
                           type="text"
                           value={editName}
                           onChange={(e) => setEditName(e.target.value)}
-                          className="text-3xl font-bold text-gray-900 bg-transparent border-b-2 border-brand-500 focus:outline-none focus:border-brand-600"
+                          className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent text-lg"
                           placeholder="Enter your name"
                         />
                       ) : (
-                        <h2 className="text-3xl font-bold text-gray-900">{profile.name}</h2>
+                        <p className="text-2xl font-bold text-gray-900">{profile.name}</p>
                       )}
                     </div>
-                    
-                    <div className="flex items-center gap-2">
+
+                    {/* Profile Details Grid */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="space-y-4">
+                        <div className="flex items-center gap-3">
+                          <Mail className="w-5 h-5 text-gray-400" />
+                          <div>
+                            <p className="text-sm text-gray-600">Email</p>
+                            <p className="font-medium text-gray-900">{profile.email}</p>
+                          </div>
+                        </div>
+                        
+                        <div className="flex items-center gap-3">
+                          <User className="w-5 h-5 text-gray-400" />
+                          <div>
+                            <p className="text-sm text-gray-600">User ID</p>
+                            <p className="font-medium text-gray-900 font-mono">{profile.id}</p>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div className="space-y-4">
+                        <div className="flex items-center gap-3">
+                          <Users className="w-5 h-5 text-gray-400" />
+                          <div>
+                            <p className="text-sm text-gray-600">Team ID</p>
+                            <p className="font-medium text-gray-900 font-mono">{profile.current_team_id}</p>
+                          </div>
+                        </div>
+                        
+                        <div className="flex items-center gap-3">
+                          <Calendar className="w-5 h-5 text-gray-400" />
+                          <div>
+                            <p className="text-sm text-gray-600">Member Since</p>
+                            <p className="font-medium text-gray-900">{formatTimestamp(profile.created_at)}</p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Action Buttons */}
+                    <div className="flex items-center gap-2 pt-4 border-t">
                       {isEditing ? (
                         <>
                           <Button
                             variant="outline"
                             onClick={handleCancel}
                             disabled={loading}
-                            size="sm"
                           >
                             <X className="w-4 h-4 mr-2" />
                             Cancel
@@ -230,60 +273,23 @@ export default function ProfilePage() {
                           <Button
                             onClick={handleSave}
                             disabled={loading || !editName.trim()}
-                            size="sm"
                           >
                             <Save className="w-4 h-4 mr-2" />
-                            Save
+                            Save Changes
                           </Button>
+                          <span className="text-xs text-gray-400 font-mono bg-gray-50 px-2 py-1 rounded ml-2">
+                            POST /user
+                          </span>
                         </>
                       ) : (
                         <Button
                           variant="outline"
                           onClick={handleEdit}
-                          size="sm"
                         >
                           <Edit className="w-4 h-4 mr-2" />
-                          Edit
+                          Edit Profile
                         </Button>
                       )}
-                    </div>
-                  </div>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="space-y-4">
-                      <div className="flex items-center gap-3">
-                        <Mail className="w-5 h-5 text-gray-400" />
-                        <div>
-                          <p className="text-sm text-gray-600">Email</p>
-                          <p className="font-medium text-gray-900">{profile.email}</p>
-                        </div>
-                      </div>
-                      
-                      <div className="flex items-center gap-3">
-                        <User className="w-5 h-5 text-gray-400" />
-                        <div>
-                          <p className="text-sm text-gray-600">User ID</p>
-                          <p className="font-medium text-gray-900">{profile.id}</p>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    <div className="space-y-4">
-                      <div className="flex items-center gap-3">
-                        <Users className="w-5 h-5 text-gray-400" />
-                        <div>
-                          <p className="text-sm text-gray-600">Current Team ID</p>
-                          <p className="font-medium text-gray-900">{profile.current_team_id}</p>
-                        </div>
-                      </div>
-                      
-                      <div className="flex items-center gap-3">
-                        <Calendar className="w-5 h-5 text-gray-400" />
-                        <div>
-                          <p className="text-sm text-gray-600">Member Since</p>
-                          <p className="font-medium text-gray-900">{formatTimestamp(profile.created_at)}</p>
-                        </div>
-                      </div>
                     </div>
                   </div>
                 </div>
@@ -302,7 +308,7 @@ export default function ProfilePage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Created At
+                    Account Created
                   </label>
                   <p className="text-gray-900">{formatTimestamp(profile.created_at)}</p>
                 </div>
@@ -320,7 +326,7 @@ export default function ProfilePage() {
             <Card className="p-6 bg-gray-50 border-gray-200">
               <h4 className="font-medium text-gray-700 mb-3 flex items-center gap-2">
                 <AlertCircle className="w-4 h-4" />
-                API Endpoints Used
+                Available Profile Operations
               </h4>
               <div className="space-y-2">
                 <div className="flex items-center justify-between text-sm">
@@ -332,6 +338,12 @@ export default function ProfilePage() {
                   <code className="bg-white px-2 py-1 rounded border border-gray-200 text-xs font-mono text-gray-700">POST /user</code>
                 </div>
               </div>
+              <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded text-sm">
+                <p className="text-blue-800">
+                  <strong>Note:</strong> This profile section only includes features supported by the CustomGPT API. 
+                  You can update your name and profile photo. Email and other account settings are managed through the CustomGPT platform.
+                </p>
+              </div>
             </Card>
           </div>
         ) : (
@@ -341,7 +353,7 @@ export default function ProfilePage() {
               No Profile Data
             </h3>
             <p className="text-gray-600 mb-4">
-              Unable to load profile information from the CustomGPT.ai API
+              Unable to load profile information from the CustomGPT API
             </p>
             <Button onClick={fetchProfile} disabled={loading}>
               <RefreshCw className={cn('w-4 h-4 mr-2', loading && 'animate-spin')} />

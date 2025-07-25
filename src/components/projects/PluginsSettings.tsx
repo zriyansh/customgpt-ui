@@ -39,56 +39,8 @@ export const PluginsSettings: React.FC<PluginsSettingsProps> = ({ project }) => 
     fetchPlugins(project.id);
   };
 
-  // Mock plugins data since the API might not have this implemented yet
-  const mockPlugins = [
-    {
-      id: 'web-search',
-      name: 'Web Search',
-      description: 'Allow your agent to search the web for real-time information',
-      enabled: false,
-      category: 'Data Sources',
-      settings: {
-        maxResults: 5,
-        safeBrowsing: true,
-      },
-    },
-    {
-      id: 'email-integration',
-      name: 'Email Integration',
-      description: 'Send and receive emails through your agent',
-      enabled: false,
-      category: 'Communication',
-      settings: {
-        smtpServer: '',
-        credentials: null,
-      },
-    },
-    {
-      id: 'calendar-sync',
-      name: 'Calendar Sync',
-      description: 'Access and manage calendar events',
-      enabled: false,
-      category: 'Productivity',
-      settings: {
-        provider: 'google',
-        timezone: 'UTC',
-      },
-    },
-    {
-      id: 'analytics-tracking',
-      name: 'Advanced Analytics',
-      description: 'Track detailed conversation analytics and user behavior',
-      enabled: true,
-      category: 'Analytics',
-      settings: {
-        trackingLevel: 'standard',
-        dataRetention: 90,
-      },
-    },
-  ];
-
-  // Use mock data if no plugins from API
-  const displayPlugins = plugins.length > 0 ? plugins : mockPlugins;
+  // Use plugins from store
+  const displayPlugins = plugins;
   
   // Group plugins by category
   const pluginsByCategory = (displayPlugins as any[]).reduce((acc, plugin) => {
@@ -126,13 +78,13 @@ export const PluginsSettings: React.FC<PluginsSettingsProps> = ({ project }) => 
 
       {/* Error State */}
       {pluginsError && (
-        <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-          <div className="flex items-center gap-2 text-yellow-800">
+        <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+          <div className="flex items-center gap-2 text-red-800">
             <AlertCircle className="w-5 h-5" />
-            <span className="font-medium">Plugin API Not Available</span>
+            <span className="font-medium">Error loading plugin settings</span>
           </div>
-          <p className="text-yellow-700 mt-1 text-sm">
-            Showing example plugins. The plugin system may not be fully implemented yet.
+          <p className="text-red-700 mt-1 text-sm">
+            Plugin features are not yet available.
           </p>
         </div>
       )}
@@ -152,7 +104,7 @@ export const PluginsSettings: React.FC<PluginsSettingsProps> = ({ project }) => 
             </Card>
           ))}
         </div>
-      ) : (
+      ) : displayPlugins.length > 0 ? (
         <div className="space-y-6">
           {/* Info Card */}
           <Card className="p-6 bg-blue-50 border-blue-200">
@@ -303,6 +255,21 @@ export const PluginsSettings: React.FC<PluginsSettingsProps> = ({ project }) => 
               <Button variant="outline" size="sm" className="border-purple-300 text-purple-700 hover:bg-purple-100">
                 Developer Examples
               </Button>
+            </div>
+          </Card>
+        </div>
+      ) : (
+        <div className="space-y-6">
+          {/* No plugins available */}
+          <Card className="p-6 bg-gray-50 border-gray-200">
+            <div className="text-center">
+              <Plug className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                No Plugins Available
+              </h3>
+              <p className="text-gray-600">
+                Plugin features are not yet available. Check back later for updates.
+              </p>
             </div>
           </Card>
         </div>

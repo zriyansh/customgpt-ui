@@ -167,49 +167,109 @@ export function isValidApiKey(apiKey: string): boolean {
  */
 export function parseStreamChunk(chunk: string): any | null {
   try {
+    console.log('🔍 Parsing stream chunk:', chunk);
+    
+    // Skip event lines - CustomGPT sends "event: progress" etc.
+    if (chunk.startsWith('event: ')) {
+      const eventType = chunk.slice(7).trim();
+      console.log('📌 SSE event:', eventType);
+      
+      // Handle specific events if needed
+      if (eventType === 'finish') {
+        return { type: 'done' };
+      }
+      
+      // Skip other event types
+      return null;
+    }
+    
     // Handle SSE format
     if (chunk.startsWith('data: ')) {
       const data = chunk.slice(6).trim();
-      if (data === '[DONE]') return { type: 'done' };
+      console.log('📦 SSE data:', data);
       
-      // Parse JSON data
-      const parsed = JSON.parse(data);
+      if (data === '[DONE]' || data === 'DONE') return { type: 'done' };
       
-      // Handle different response formats
-      if (typeof parsed === 'object') {
-        // If it already has a type, return as is
-        if (parsed.type) {
-          return parsed;
+      // CustomGPT might send plain text data instead of JSON
+      // Try to parse as JSON first
+      try {
+        const parsed = JSON.parse(data);
+        console.log('🎯 Parsed SSE JSON:', parsed);
+        
+        // Handle different response formats
+        if (typeof parsed === 'object') {
+          // If it already has a type, return as is
+          if (parsed.type) {
+            return parsed;
+          }
+          
+          // Handle CustomGPT format where content might be a direct property
+          if (parsed.content !== undefined) {
+            return { type: 'content', content: parsed.content, citations: parsed.citations };
+          }
+          
+          // Handle citation-only responses
+          if (parsed.citations && !parsed.content) {
+            return { type: 'citation', citations: parsed.citations };
+          }
+          
+          // Handle message field (some APIs use 'message' instead of 'content')
+          if (parsed.message !== undefined) {
+            return { type: 'content', content: parsed.message, citations: parsed.citations };
+          }
+          
+          // Handle delta format (some streaming APIs use delta.content)
+          if (parsed.delta && parsed.delta.content !== undefined) {
+            return { type: 'content', content: parsed.delta.content, citations: parsed.citations };
+          }
+          
+          // Handle choices format (OpenAI-style streaming)
+          if (parsed.choices && parsed.choices[0] && parsed.choices[0].delta) {
+            const delta = parsed.choices[0].delta;
+            if (delta.content !== undefined) {
+              return { type: 'content', content: delta.content, citations: parsed.citations };
+            }
+          }
         }
         
-        // Handle CustomGPT format where content might be a direct property
-        if (parsed.content !== undefined) {
-          return { type: 'content', content: parsed.content, citations: parsed.citations };
-        }
-        
-        // Handle citation-only responses
-        if (parsed.citations && !parsed.content) {
-          return { type: 'citation', citations: parsed.citations };
-        }
+        // Return the parsed data as is if we can't determine the format
+        return parsed;
+      } catch (jsonError) {
+        // If JSON parsing fails, treat it as plain text content
+        console.log('📝 Plain text data:', data);
+        return { type: 'content', content: data };
       }
-      
-      // Return the parsed data as is if we can't determine the format
-      return parsed;
     }
     
-    // Also try to parse direct JSON (in case there's no "data: " prefix)
-    try {
-      const parsed = JSON.parse(chunk.trim());
-      if (parsed.content !== undefined || parsed.citations !== undefined) {
-        return { 
-          type: parsed.content ? 'content' : 'citation', 
-          content: parsed.content,
-          citations: parsed.citations 
-        };
+    // Handle raw JSON lines (no "data: " prefix)
+    if (chunk.trim().startsWith('{')) {
+      try {
+        const parsed = JSON.parse(chunk.trim());
+        console.log('🎯 Parsed raw JSON:', parsed);
+        
+        if (parsed.content !== undefined || parsed.citations !== undefined) {
+          return { 
+            type: parsed.content ? 'content' : 'citation', 
+            content: parsed.content,
+            citations: parsed.citations 
+          };
+        }
+        
+        // Handle message field
+        if (parsed.message !== undefined) {
+          return { type: 'content', content: parsed.message, citations: parsed.citations };
+        }
+        
+        return parsed;
+      } catch (parseError) {
+        console.warn('Failed to parse raw JSON chunk:', parseError);
       }
-      return parsed;
-    } catch {
-      // Not JSON, ignore
+    }
+    
+    // Handle plain text responses (fallback)
+    if (chunk.trim() && !chunk.includes('data:') && !chunk.startsWith('{')) {
+      console.log('📝 Plain text chunk:', chunk.trim());
+      return { type: 'content', content: chunk.trim() };
     }
     
     return null;
@@ -378,6 +438,46 @@ export function escapeHtml(unsafe: string): string {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#039;');
+}
+
+/**
+ * Handle API errors and extract error message
+ */
+export function handleApiError(error: any): { message: string; code?: number } {
+  console.error('API Error:', error);
+  
+  if (error.response) {
+    // API responded with an error
+    const data = error.response.data;
+    if (data && data.data && data.data.message) {
+      return {
+        message: data.data.message,
+        code: data.data.code || error.response.status
+      };
+    }
+    if (data && data.message) {
+      return {
+        message: data.message,
+        code: error.response.status
+      };
+    }
+    return {
+      message: `API Error: ${error.response.status}`,
+      code: error.response.status
+    };
+  } else if (error.request) {
+    // Request was made but no response
+    return {
+      message: 'No response from server. Please check your connection.',
+      code: 0
+    };
+  } else {
+    // Something else happened
+    return {
+      message: error.message || 'An unexpected error occurred',
+      code: 0
+    };
+  }
 }
 
 /**

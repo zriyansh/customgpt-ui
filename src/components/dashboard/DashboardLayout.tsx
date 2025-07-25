@@ -87,7 +87,7 @@ const navigation: NavItem[] = [
   },
   {
     id: 'users',
-    label: 'Users & Licenses',
+    label: 'Users',
     icon: Users,
     href: '/dashboard/users',
   },

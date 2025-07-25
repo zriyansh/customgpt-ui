@@ -9,6 +9,7 @@ export { usePageStore } from './pages';
 export { useSourceStore } from './sources';
 export { useProfileStore } from './profile';
 export { useProjectSettingsStore } from './project-settings';
+export { useLicenseStore } from './licenses';
 
 // Store initialization helper
 export function initializeStores() {

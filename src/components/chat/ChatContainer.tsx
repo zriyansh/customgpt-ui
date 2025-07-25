@@ -12,6 +12,7 @@ import { Message } from './Message';
 import { ChatInput } from './ChatInput';
 import { TypingIndicator } from './TypingIndicator';
 import { AgentSelector } from './AgentSelector';
+import { CitationDetailsModal } from './CitationDetailsModal';
 import { logger } from '@/lib/logger';
 
 const EXAMPLE_PROMPTS = [
@@ -99,10 +100,15 @@ const MessageArea: React.FC<MessageAreaProps> = ({ className }) => {
     sendMessage 
   } = useMessageStore();
   const { currentConversation } = useConversationStore();
+  const { currentAgent } = useAgentStore();
   const scrollRef = useRef<HTMLDivElement>(null);
   
+  // Citation modal state
+  const [selectedCitationId, setSelectedCitationId] = React.useState<number | string | null>(null);
+  const [citationModalOpen, setCitationModalOpen] = React.useState(false);
+  
   const conversationMessages = currentConversation 
-    ? messages.get(currentConversation.id) || []
+    ? messages.get(currentConversation.id.toString()) || []
     : [];
   
   // Auto-scroll to bottom when new messages arrive
@@ -126,8 +132,12 @@ const MessageArea: React.FC<MessageAreaProps> = ({ className }) => {
       citationIndex: citation.index,
       citationTitle: citation.title
     });
-    console.log('Citation clicked:', citation);
-    // Handle citation click - could open a modal or navigate to source
+    
+    // Open citation details modal with the citation ID
+    if (citation.id) {
+      setSelectedCitationId(citation.id);
+      setCitationModalOpen(true);
+    }
   };
   
   const handleMessageFeedback = (messageId: string, feedback: 'like' | 'dislike') => {
@@ -202,6 +212,19 @@ const MessageArea: React.FC<MessageAreaProps> = ({ className }) => {
       {/* Typing Indicator */}
       {isStreaming && !streamingMessage && (
         <TypingIndicator />
+      )}
+      
+      {/* Citation Details Modal */}
+      {selectedCitationId && (
+        <CitationDetailsModal
+          isOpen={citationModalOpen}
+          onClose={() => {
+            setCitationModalOpen(false);
+            setSelectedCitationId(null);
+          }}
+          citationId={selectedCitationId}
+          projectId={currentAgent?.id}
+        />
       )}
     </div>
   );

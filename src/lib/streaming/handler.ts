@@ -306,45 +306,6 @@ export function parseSSEData(data: string): any | null {
   }
 }
 
-/**
- * Create a mock stream for testing
- */
-export function createMockStream(
-  content: string,
-  chunkSize: number = 10,
-  delay: number = 50
-): ReadableStream {
-  const chunks: string[] = [];
-  for (let i = 0; i < content.length; i += chunkSize) {
-    chunks.push(content.slice(i, i + chunkSize));
-  }
-
-  let index = 0;
-
-  return new ReadableStream({
-    start(controller) {
-      const sendChunk = () => {
-        if (index < chunks.length) {
-          const chunk = `data: ${JSON.stringify({
-            type: 'content',
-            content: chunks[index],
-          })}\n\n`;
-          
-          controller.enqueue(new TextEncoder().encode(chunk));
-          index++;
-          
-          setTimeout(sendChunk, delay);
-        } else {
-          const doneChunk = 'data: [DONE]\n\n';
-          controller.enqueue(new TextEncoder().encode(doneChunk));
-          controller.close();
-        }
-      };
-      
-      setTimeout(sendChunk, delay);
-    },
-  });
-}
 
 /**
  * Validate stream format

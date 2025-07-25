@@ -84,77 +84,6 @@ export const AnalyticsSettings: React.FC<AnalyticsSettingsProps> = ({ project })
   const [dateRange, setDateRange] = useState('7d');
   const [viewType, setViewType] = useState<'overview' | 'usage' | 'feedback' | 'geography'>('overview');
 
-  // Mock analytics data
-  const mockData: AnalyticsData = {
-    overview: {
-      total_conversations: 1247,
-      total_messages: 18653,
-      unique_users: 892,
-      average_session_duration: 342,
-      user_satisfaction: 4.3,
-      response_time: 1.2
-    },
-    trends: {
-      conversations_change: 12.5,
-      messages_change: 8.3,
-      users_change: 15.2,
-      satisfaction_change: -2.1
-    },
-    usage_by_source: {
-      web: 45,
-      api: 28,
-      embed: 20,
-      mobile: 7
-    },
-    popular_topics: [
-      { topic: 'Product Information', count: 342, percentage: 27.4 },
-      { topic: 'Technical Support', count: 286, percentage: 22.9 },
-      { topic: 'Pricing Questions', count: 198, percentage: 15.9 },
-      { topic: 'Integration Help', count: 156, percentage: 12.5 },
-      { topic: 'General Inquiry', count: 265, percentage: 21.3 }
-    ],
-    hourly_activity: [
-      { hour: 0, conversations: 12, messages: 145 },
-      { hour: 1, conversations: 8, messages: 98 },
-      { hour: 2, conversations: 5, messages: 67 },
-      { hour: 3, conversations: 3, messages: 42 },
-      { hour: 4, conversations: 4, messages: 51 },
-      { hour: 5, conversations: 7, messages: 89 },
-      { hour: 6, conversations: 15, messages: 178 },
-      { hour: 7, conversations: 23, messages: 267 },
-      { hour: 8, conversations: 45, messages: 523 },
-      { hour: 9, conversations: 67, messages: 789 },
-      { hour: 10, conversations: 78, messages: 912 },
-      { hour: 11, conversations: 89, messages: 1034 },
-      { hour: 12, conversations: 67, messages: 845 },
-      { hour: 13, conversations: 72, messages: 891 },
-      { hour: 14, conversations: 85, messages: 967 },
-      { hour: 15, conversations: 92, messages: 1098 },
-      { hour: 16, conversations: 78, messages: 923 },
-      { hour: 17, conversations: 65, messages: 756 },
-      { hour: 18, conversations: 45, messages: 534 },
-      { hour: 19, conversations: 34, messages: 423 },
-      { hour: 20, conversations: 28, messages: 356 },
-      { hour: 21, conversations: 22, messages: 289 },
-      { hour: 22, conversations: 18, messages: 234 },
-      { hour: 23, conversations: 15, messages: 189 }
-    ],
-    user_feedback: [
-      { rating: 5, count: 487, percentage: 39.1 },
-      { rating: 4, count: 412, percentage: 33.0 },
-      { rating: 3, count: 205, percentage: 16.4 },
-      { rating: 2, count: 89, percentage: 7.1 },
-      { rating: 1, count: 54, percentage: 4.3 }
-    ],
-    geographic_data: [
-      { country: 'United States', conversations: 456, percentage: 36.6 },
-      { country: 'United Kingdom', conversations: 189, percentage: 15.2 },
-      { country: 'Canada', conversations: 134, percentage: 10.7 },
-      { country: 'Germany', conversations: 98, percentage: 7.9 },
-      { country: 'France', conversations: 87, percentage: 7.0 },
-      { country: 'Others', conversations: 283, percentage: 22.7 }
-    ]
-  };
 
   useEffect(() => {
     loadAnalytics();
@@ -165,9 +94,8 @@ export const AnalyticsSettings: React.FC<AnalyticsSettingsProps> = ({ project })
     setError(null);
 
     try {
-      // Mock API call - replace with actual API
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      setData(mockData);
+      // TODO: Implement actual API call when analytics API is available
+      setError('Analytics features are not yet available');
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to load analytics';
       setError(errorMessage);

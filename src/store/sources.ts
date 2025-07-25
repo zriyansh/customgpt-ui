@@ -1,3 +1,6 @@
+// Temporarily disabled - sources are now managed directly in components using the API
+// This store will be removed or updated to match the new API structure
+
 import { create } from 'zustand';
 import { getClient } from '@/lib/api/client';
 import { toast } from 'sonner';
@@ -59,6 +62,7 @@ interface SourcesState {
   reset: () => void;
 }
 
+// Mock implementation to avoid breaking imports
 export const useSourceStore = create<SourcesState>((set, get) => ({
   sources: [],
   currentSource: null,
@@ -80,10 +84,11 @@ export const useSourceStore = create<SourcesState>((set, get) => ({
     
     try {
       const client = getClient();
-      const response = await client.getSources(projectId);
+      // const response = await client.getSources(projectId);
       
-      const sources = Array.isArray(response.data) ? response.data : [];
+      const sources: Source[] = []; // Array.isArray(response.data) ? response.data : [];
       set({ sources, loading: false });
+      throw new Error('Sources API integration needs update');
     } catch (error) {
       console.error('Failed to fetch sources:', error);
       set({ 
@@ -98,16 +103,17 @@ export const useSourceStore = create<SourcesState>((set, get) => ({
     set({ loading: true, error: null });
     
     try {
-      const client = getClient();
-      const response = await client.getSource(projectId, sourceId);
+      // const client = getClient();
+      // const response = await client.getSource(projectId, sourceId);
       
-      const source = response.data;
-      set({ currentSource: source, loading: false });
+      // const source = response.data;
+      // set({ currentSource: source, loading: false });
+      throw new Error('getSource API method not available');
       
       // Update in the list as well
-      set(state => ({
-        sources: state.sources.map(s => s.id === sourceId ? source : s),
-      }));
+      // set(state => ({
+      //   sources: state.sources.map(s => s.id === sourceId ? source : s),
+      // }));
     } catch (error) {
       console.error('Failed to fetch source:', error);
       set({ 
@@ -126,7 +132,7 @@ export const useSourceStore = create<SourcesState>((set, get) => ({
       
       // Upload files one by one for better progress tracking
       const uploadPromises = files.map(file => 
-        client.uploadFile(projectId, file)
+        Promise.reject(new Error('uploadFile API method not available'))
       );
       
       const responses = await Promise.all(uploadPromises);
@@ -152,11 +158,13 @@ export const useSourceStore = create<SourcesState>((set, get) => ({
     
     try {
       const client = getClient();
-      await client.updateSource(projectId, sourceId, {
+      // await client.updateSource(projectId, sourceId, {
+      throw new Error('updateSource API method not available');
+      /*
         name: updates.name,
         metadata: updates.metadata,
         status: updates.status,
-      });
+      }); */
       
       set(state => ({
         sources: state.sources.map(source => 
@@ -187,7 +195,7 @@ export const useSourceStore = create<SourcesState>((set, get) => ({
     
     try {
       const client = getClient();
-      await client.deleteSource(projectId, sourceId);
+      await client.deleteSource(projectId, parseInt(sourceId));
       
       set(state => ({
         sources: state.sources.filter(source => source.id !== sourceId),
@@ -215,7 +223,7 @@ export const useSourceStore = create<SourcesState>((set, get) => ({
       
       // Delete sources in parallel
       await Promise.all(
-        sourceIds.map(sourceId => client.deleteSource(projectId, sourceId))
+        sourceIds.map(sourceId => client.deleteSource(projectId, parseInt(sourceId)))
       );
       
       set(state => ({
@@ -245,7 +253,8 @@ export const useSourceStore = create<SourcesState>((set, get) => ({
     
     try {
       const client = getClient();
-      await client.syncSources(projectId);
+      // await client.syncSources(projectId);
+      throw new Error('syncSources API method not available');
       
       // Refresh sources after sync
       await get().fetchSources(projectId);

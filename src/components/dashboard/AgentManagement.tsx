@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Plus,
@@ -23,34 +23,31 @@ import {
   Pause,
   AlertCircle,
   CheckCircle,
-  Clock
+  Clock,
+  Code,
+  Link
 } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
+import { useAgentStore } from '@/store/agents';
+import type { Agent, AgentStats } from '@/types';
+import { useRouter } from 'next/navigation';
 
-interface Agent {
-  id: number;
-  project_name: string;
-  status: 'active' | 'inactive' | 'processing';
-  is_shared: boolean;
-  conversations: number;
-  queries: number;
-  last_activity: string;
-  created_at: string;
-  response_time: string;
-  accuracy: number;
-  type: 'SITEMAP' | 'URL' | 'FILE';
-  pages: number;
+interface ExtendedAgent extends Agent {
+  stats?: AgentStats;
+  isLoadingStats?: boolean;
 }
 
 interface AgentCardProps {
-  agent: Agent;
-  onEdit: (agent: Agent) => void;
-  onDelete: (agent: Agent) => void;
-  onToggleStatus: (agent: Agent) => void;
-  onViewAnalytics: (agent: Agent) => void;
-  onReplicate: (agent: Agent) => void;
+  agent: ExtendedAgent;
+  onEdit: (agent: ExtendedAgent) => void;
+  onDelete: (agent: ExtendedAgent) => void;
+  onToggleStatus: (agent: ExtendedAgent) => void;
+  onViewAnalytics: (agent: ExtendedAgent) => void;
+  onReplicate: (agent: ExtendedAgent) => void;
+  onViewEmbed: (agent: ExtendedAgent) => void;
+  onViewShareLink: (agent: ExtendedAgent) => void;
 }
 
 const AgentCard: React.FC<AgentCardProps> = ({
@@ -59,17 +56,29 @@ const AgentCard: React.FC<AgentCardProps> = ({
   onDelete,
   onToggleStatus,
   onViewAnalytics,
-  onReplicate
+  onReplicate,
+  onViewEmbed,
+  onViewShareLink
 }) => {
   const [showMenu, setShowMenu] = useState(false);
 
+  const getStatus = () => {
+    if (!agent.is_chat_active) return 'inactive';
+    if (agent.type === 'SITEMAP' && agent.stats && agent.stats.pages_crawled < agent.stats.pages_found) {
+      return 'processing';
+    }
+    return 'active';
+  };
+
+  const status = getStatus();
+  
   const statusConfig = {
     active: { color: 'bg-green-100 text-green-800', icon: CheckCircle },
     inactive: { color: 'bg-gray-100 text-gray-800', icon: Pause },
     processing: { color: 'bg-yellow-100 text-yellow-800', icon: Clock },
   };
 
-  const StatusIcon = statusConfig[agent.status].icon;
+  const StatusIcon = statusConfig[status].icon;
 
   return (
     <motion.div
@@ -89,10 +98,10 @@ const AgentCard: React.FC<AgentCardProps> = ({
             <div className="flex items-center gap-2 mt-1">
               <span className={cn(
                 'inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium',
-                statusConfig[agent.status].color
+                statusConfig[status].color
               )}>
                 <StatusIcon className="h-3 w-3" />
-                {agent.status.charAt(0).toUpperCase() + agent.status.slice(1)}
+                {status.charAt(0).toUpperCase() + status.slice(1)}
               </span>
               {agent.is_shared && (
                 <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
@@ -151,8 +160,8 @@ const AgentCard: React.FC<AgentCardProps> = ({
                     onClick={() => { onToggleStatus(agent); setShowMenu(false); }}
                     className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
                   >
-                    {agent.status === 'active' ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
-                    {agent.status === 'active' ? 'Deactivate' : 'Activate'}
+                    {agent.is_chat_active ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+                    {agent.is_chat_active ? 'Deactivate' : 'Activate'}
                   </button>
                   <hr className="my-1" />
                   <button
@@ -172,42 +181,82 @@ const AgentCard: React.FC<AgentCardProps> = ({
       {/* Metrics */}
       <div className="grid grid-cols-2 gap-4 mb-4">
         <div className="text-center p-3 bg-gray-50 rounded-lg">
-          <div className="text-lg font-semibold text-gray-900">{agent.conversations.toLocaleString()}</div>
+          <div className="text-lg font-semibold text-gray-900">
+            {agent.stats?.total_queries?.toLocaleString() || '0'}
+          </div>
           <div className="text-xs text-gray-600 flex items-center justify-center gap-1">
             <MessageSquare className="h-3 w-3" />
-            Conversations
+            Total Queries
           </div>
         </div>
         <div className="text-center p-3 bg-gray-50 rounded-lg">
-          <div className="text-lg font-semibold text-gray-900">{agent.queries.toLocaleString()}</div>
+          <div className="text-lg font-semibold text-gray-900">
+            {agent.stats?.pages_indexed?.toLocaleString() || '0'}
+          </div>
           <div className="text-xs text-gray-600 flex items-center justify-center gap-1">
             <BarChart3 className="h-3 w-3" />
-            Queries
+            Pages Indexed
           </div>
         </div>
       </div>
 
       {/* Performance Metrics */}
       <div className="space-y-2 mb-4">
+        {agent.stats && (
+          <>
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-gray-600">Pages Crawled</span>
+              <span className="text-sm font-medium text-gray-900">
+                {agent.stats.pages_crawled}/{agent.stats.pages_found}
+              </span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-gray-600">Credits Used</span>
+              <span className="text-sm font-medium text-gray-900">
+                {(agent.stats.crawl_credits_used + agent.stats.query_credits_used).toLocaleString()}
+              </span>
+            </div>
+          </>
+        )}
         <div className="flex justify-between items-center">
-          <span className="text-sm text-gray-600">Response Time</span>
-          <span className="text-sm font-medium text-gray-900">{agent.response_time}</span>
-        </div>
-        <div className="flex justify-between items-center">
-          <span className="text-sm text-gray-600">Accuracy</span>
-          <span className="text-sm font-medium text-gray-900">{agent.accuracy}%</span>
-        </div>
-        <div className="flex justify-between items-center">
-          <span className="text-sm text-gray-600">Pages</span>
-          <span className="text-sm font-medium text-gray-900">{agent.pages.toLocaleString()}</span>
+          <span className="text-sm text-gray-600">Type</span>
+          <span className="text-sm font-medium text-gray-900">{agent.type}</span>
         </div>
       </div>
+      
+      {/* Additional Actions */}
+      {(agent.shareable_link || agent.embed_code) && (
+        <div className="flex gap-2 mb-4">
+          {agent.shareable_link && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onViewShareLink(agent)}
+              className="flex-1 h-7 text-xs"
+            >
+              <Link className="h-3 w-3 mr-1" />
+              Share Link
+            </Button>
+          )}
+          {agent.embed_code && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onViewEmbed(agent)}
+              className="flex-1 h-7 text-xs"
+            >
+              <Code className="h-3 w-3 mr-1" />
+              Embed
+            </Button>
+          )}
+        </div>
+      )}
 
       {/* Footer */}
       <div className="flex items-center justify-between pt-4 border-t border-gray-200">
         <div className="flex items-center gap-1 text-xs text-gray-500">
           <Calendar className="h-3 w-3" />
-          Last active {agent.last_activity}
+          Created {new Date(agent.created_at).toLocaleDateString()}
         </div>
         <Button
           variant="outline"
@@ -224,99 +273,98 @@ const AgentCard: React.FC<AgentCardProps> = ({
 };
 
 export const AgentManagement: React.FC = () => {
+  const router = useRouter();
+  const { agents, loading, error, fetchAgents, deleteAgent, replicateAgent, updateAgent, getAgentStats } = useAgentStore();
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive' | 'processing'>('all');
-  const [sortBy, setSortBy] = useState<'name' | 'created' | 'activity' | 'conversations'>('activity');
+  const [sortBy, setSortBy] = useState<'name' | 'created' | 'id'>('created');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [extendedAgents, setExtendedAgents] = useState<ExtendedAgent[]>([]);
+  const [showShareModal, setShowShareModal] = useState<ExtendedAgent | null>(null);
+  const [showEmbedModal, setShowEmbedModal] = useState<ExtendedAgent | null>(null);
+  
+  useEffect(() => {
+    fetchAgents();
+  }, []);
+  
+  // Load stats for each agent
+  useEffect(() => {
+    const loadStats = async () => {
+      const agentsWithStats = await Promise.all(
+        agents.map(async (agent) => {
+          try {
+            const stats = await getAgentStats(agent.id);
+            return { ...agent, stats } as ExtendedAgent;
+          } catch (err) {
+            console.error(`Failed to load stats for agent ${agent.id}:`, err);
+            return agent as ExtendedAgent;
+          }
+        })
+      );
+      setExtendedAgents(agentsWithStats);
+    };
+    
+    if (agents.length > 0) {
+      loadStats();
+    }
+  }, [agents]);
 
-  // Mock data - in real app, this would come from API
-  const [agents] = useState<Agent[]>([
-    {
-      id: 1,
-      project_name: 'Customer Support Bot',
-      status: 'active',
-      is_shared: true,
-      conversations: 1234,
-      queries: 5678,
-      last_activity: '2 hours ago',
-      created_at: '2024-01-15',
-      response_time: '1.2s',
-      accuracy: 94,
-      type: 'SITEMAP',
-      pages: 156,
-    },
-    {
-      id: 2,
-      project_name: 'Sales Assistant',
-      status: 'active',
-      is_shared: false,
-      conversations: 567,
-      queries: 2345,
-      last_activity: '5 minutes ago',
-      created_at: '2024-02-01',
-      response_time: '0.8s',
-      accuracy: 97,
-      type: 'FILE',
-      pages: 89,
-    },
-    {
-      id: 3,
-      project_name: 'Product Documentation',
-      status: 'processing',
-      is_shared: true,
-      conversations: 234,
-      queries: 890,
-      last_activity: '1 day ago',
-      created_at: '2024-02-10',
-      response_time: '1.5s',
-      accuracy: 91,
-      type: 'URL',
-      pages: 234,
-    },
-    {
-      id: 4,
-      project_name: 'HR Helpdesk',
-      status: 'inactive',
-      is_shared: false,
-      conversations: 89,
-      queries: 123,
-      last_activity: '1 week ago',
-      created_at: '2024-01-20',
-      response_time: '2.1s',
-      accuracy: 88,
-      type: 'SITEMAP',
-      pages: 67,
-    },
-  ]);
+  const getAgentStatus = (agent: ExtendedAgent) => {
+    if (!agent.is_chat_active) return 'inactive';
+    if (agent.type === 'SITEMAP' && agent.stats && agent.stats.pages_crawled < agent.stats.pages_found) {
+      return 'processing';
+    }
+    return 'active';
+  };
 
-  const filteredAgents = agents.filter(agent => {
+  const filteredAgents = extendedAgents.filter(agent => {
     const matchesSearch = agent.project_name.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesStatus = statusFilter === 'all' || agent.status === statusFilter;
+    const matchesStatus = statusFilter === 'all' || getAgentStatus(agent) === statusFilter;
     return matchesSearch && matchesStatus;
   });
 
   const handleCreateAgent = () => {
-    console.log('Create new agent');
+    router.push('/dashboard/agents/create');
   };
 
-  const handleEditAgent = (agent: Agent) => {
-    console.log('Edit agent:', agent.id);
+  const handleEditAgent = (agent: ExtendedAgent) => {
+    router.push(`/dashboard/agents/${agent.id}/settings`);
   };
 
-  const handleDeleteAgent = (agent: Agent) => {
-    console.log('Delete agent:', agent.id);
+  const handleDeleteAgent = async (agent: ExtendedAgent) => {
+    if (confirm(`Are you sure you want to delete "${agent.project_name}"?`)) {
+      try {
+        await deleteAgent(agent.id);
+      } catch (err) {
+        console.error('Failed to delete agent:', err);
+      }
+    }
   };
 
-  const handleToggleStatus = (agent: Agent) => {
-    console.log('Toggle status for agent:', agent.id);
+  const handleToggleStatus = async (agent: ExtendedAgent) => {
+    // Note: API doesn't support toggling is_chat_active directly
+    // This would need to be done through agent settings
+    router.push(`/dashboard/agents/${agent.id}/settings`);
   };
 
-  const handleViewAnalytics = (agent: Agent) => {
-    console.log('View analytics for agent:', agent.id);
+  const handleViewAnalytics = (agent: ExtendedAgent) => {
+    router.push(`/dashboard/agents/${agent.id}/analytics`);
   };
 
-  const handleReplicate = (agent: Agent) => {
-    console.log('Replicate agent:', agent.id);
+  const handleReplicate = async (agent: ExtendedAgent) => {
+    try {
+      await replicateAgent(agent.id);
+    } catch (err) {
+      console.error('Failed to replicate agent:', err);
+    }
+  };
+  
+  const handleViewShareLink = (agent: ExtendedAgent) => {
+    setShowShareModal(agent);
+  };
+  
+  const handleViewEmbed = (agent: ExtendedAgent) => {
+    setShowEmbedModal(agent);
   };
 
   return (
@@ -366,10 +414,9 @@ export const AgentManagement: React.FC = () => {
             onChange={(e) => setSortBy(e.target.value as any)}
             className="px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
           >
-            <option value="activity">Last Activity</option>
-            <option value="name">Name</option>
             <option value="created">Created Date</option>
-            <option value="conversations">Conversations</option>
+            <option value="name">Name</option>
+            <option value="id">ID</option>
           </select>
         </div>
 
@@ -400,7 +447,7 @@ export const AgentManagement: React.FC = () => {
               <Bot className="h-5 w-5 text-blue-600" />
             </div>
             <div>
-              <p className="text-2xl font-bold text-gray-900">{agents.length}</p>
+              <p className="text-2xl font-bold text-gray-900">{extendedAgents.length}</p>
               <p className="text-sm text-gray-600">Total Agents</p>
             </div>
           </div>
@@ -411,7 +458,7 @@ export const AgentManagement: React.FC = () => {
               <CheckCircle className="h-5 w-5 text-green-600" />
             </div>
             <div>
-              <p className="text-2xl font-bold text-gray-900">{agents.filter(a => a.status === 'active').length}</p>
+              <p className="text-2xl font-bold text-gray-900">{extendedAgents.filter(a => getAgentStatus(a) === 'active').length}</p>
               <p className="text-sm text-gray-600">Active</p>
             </div>
           </div>
@@ -422,8 +469,8 @@ export const AgentManagement: React.FC = () => {
               <MessageSquare className="h-5 w-5 text-purple-600" />
             </div>
             <div>
-              <p className="text-2xl font-bold text-gray-900">{agents.reduce((sum, a) => sum + a.conversations, 0).toLocaleString()}</p>
-              <p className="text-sm text-gray-600">Conversations</p>
+              <p className="text-2xl font-bold text-gray-900">{extendedAgents.filter(a => a.is_shared).length}</p>
+              <p className="text-sm text-gray-600">Public Agents</p>
             </div>
           </div>
         </div>
@@ -433,7 +480,9 @@ export const AgentManagement: React.FC = () => {
               <BarChart3 className="h-5 w-5 text-orange-600" />
             </div>
             <div>
-              <p className="text-2xl font-bold text-gray-900">{agents.reduce((sum, a) => sum + a.queries, 0).toLocaleString()}</p>
+              <p className="text-2xl font-bold text-gray-900">
+                {extendedAgents.reduce((sum, a) => sum + (a.stats?.total_queries || 0), 0).toLocaleString()}
+              </p>
               <p className="text-sm text-gray-600">Total Queries</p>
             </div>
           </div>
@@ -441,7 +490,21 @@ export const AgentManagement: React.FC = () => {
       </div>
 
       {/* Agent Grid/List */}
-      {filteredAgents.length === 0 ? (
+      {loading ? (
+        <div className="text-center py-12">
+          <div className="inline-flex items-center gap-2">
+            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-brand-600"></div>
+            <p className="text-gray-600">Loading agents...</p>
+          </div>
+        </div>
+      ) : error ? (
+        <div className="text-center py-12">
+          <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
+          <h3 className="text-lg font-medium text-gray-900 mb-2">Error loading agents</h3>
+          <p className="text-gray-600 mb-6">{error}</p>
+          <Button onClick={() => fetchAgents()}>Try Again</Button>
+        </div>
+      ) : filteredAgents.length === 0 ? (
         <div className="text-center py-12">
           <AlertCircle className="h-12 w-12 text-gray-400 mx-auto mb-4" />
           <h3 className="text-lg font-medium text-gray-900 mb-2">No agents found</h3>
@@ -473,9 +536,102 @@ export const AgentManagement: React.FC = () => {
               onToggleStatus={handleToggleStatus}
               onViewAnalytics={handleViewAnalytics}
               onReplicate={handleReplicate}
+              onViewShareLink={handleViewShareLink}
+              onViewEmbed={handleViewEmbed}
             />
           ))}
         </div>
+      )}
+      
+      {/* Share Link Modal */}
+      {showShareModal && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+          onClick={() => setShowShareModal(null)}
+        >
+          <motion.div
+            initial={{ scale: 0.95 }}
+            animate={{ scale: 1 }}
+            exit={{ scale: 0.95 }}
+            className="bg-white rounded-lg p-6 max-w-md w-full"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="text-lg font-semibold mb-4">Share Link</h3>
+            <p className="text-gray-600 mb-4">Share this link to give others access to your agent:</p>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={showShareModal.shareable_link || ''}
+                readOnly
+                className="flex-1 px-3 py-2 border border-gray-200 rounded-lg bg-gray-50"
+              />
+              <Button
+                onClick={() => {
+                  navigator.clipboard.writeText(showShareModal.shareable_link || '');
+                  alert('Link copied to clipboard!');
+                }}
+              >
+                Copy
+              </Button>
+            </div>
+            <Button
+              variant="outline"
+              className="w-full mt-4"
+              onClick={() => setShowShareModal(null)}
+            >
+              Close
+            </Button>
+          </motion.div>
+        </motion.div>
+      )}
+      
+      {/* Embed Code Modal */}
+      {showEmbedModal && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+          onClick={() => setShowEmbedModal(null)}
+        >
+          <motion.div
+            initial={{ scale: 0.95 }}
+            animate={{ scale: 1 }}
+            exit={{ scale: 0.95 }}
+            className="bg-white rounded-lg p-6 max-w-2xl w-full"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="text-lg font-semibold mb-4">Embed Code</h3>
+            <p className="text-gray-600 mb-4">Add this code to your website to embed the agent:</p>
+            <textarea
+              value={showEmbedModal.embed_code || ''}
+              readOnly
+              rows={10}
+              className="w-full px-3 py-2 border border-gray-200 rounded-lg bg-gray-50 font-mono text-sm"
+            />
+            <div className="flex gap-2 mt-4">
+              <Button
+                onClick={() => {
+                  navigator.clipboard.writeText(showEmbedModal.embed_code || '');
+                  alert('Code copied to clipboard!');
+                }}
+                className="flex-1"
+              >
+                Copy Code
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => setShowEmbedModal(null)}
+                className="flex-1"
+              >
+                Close
+              </Button>
+            </div>
+          </motion.div>
+        </motion.div>
       )}
     </div>
   );

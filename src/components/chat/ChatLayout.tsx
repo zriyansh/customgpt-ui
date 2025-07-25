@@ -28,7 +28,7 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({
   // Load messages when conversation changes
   useEffect(() => {
     if (currentConversation) {
-      loadMessages(currentConversation.id);
+      loadMessages(currentConversation.id.toString());
     }
   }, [currentConversation, loadMessages]);
 

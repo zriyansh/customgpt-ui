@@ -110,24 +110,16 @@ export const StatsOverview: React.FC<StatsOverviewProps> = ({ project }) => {
     fetchStats(project.id);
   };
 
-  // Mock stats data since the API might not have complete stats
-  const mockStats = {
-    total_conversations: 1247,
-    total_messages: 5823,
-    total_sources: 15,
-    total_pages: 42,
-    last_activity: '2024-01-15T10:30:00Z',
-    created_at: project.created_at || '2024-01-01T00:00:00Z',
-    updated_at: project.updated_at || '2024-01-15T10:30:00Z',
-    // Additional mock data
-    unique_users: 892,
-    avg_response_time: 1.2,
-    satisfaction_rate: 4.6,
-    monthly_growth: 12.5,
+  // Use stats from store
+  const displayStats = stats || {
+    total_conversations: 0,
+    total_messages: 0,
+    total_sources: 0,
+    total_pages: 0,
+    last_activity: null,
+    created_at: project.created_at,
+    updated_at: project.updated_at,
   };
-
-  // Use mock data if no stats from API
-  const displayStats = stats || mockStats;
 
   const statCards = [
     {
@@ -136,7 +128,6 @@ export const StatsOverview: React.FC<StatsOverviewProps> = ({ project }) => {
       description: 'Unique conversation sessions',
       icon: MessageSquare,
       color: 'blue' as const,
-      trend: { value: 12.5, isPositive: true },
     },
     {
       title: 'Total Messages',
@@ -144,7 +135,6 @@ export const StatsOverview: React.FC<StatsOverviewProps> = ({ project }) => {
       description: 'Messages exchanged with users',
       icon: Users,
       color: 'green' as const,
-      trend: { value: 8.3, isPositive: true },
     },
     {
       title: 'Knowledge Sources',
@@ -162,29 +152,6 @@ export const StatsOverview: React.FC<StatsOverviewProps> = ({ project }) => {
     },
   ];
 
-  const performanceMetrics = [
-    {
-      title: 'Unique Users',
-      value: (displayStats as any).unique_users?.toLocaleString() || '0',
-      description: 'Individual users this month',
-      icon: Users,
-      color: 'blue' as const,
-    },
-    {
-      title: 'Avg Response Time',
-      value: `${(displayStats as any).avg_response_time || '0.0'}s`,
-      description: 'Average AI response time',
-      icon: Clock,
-      color: 'green' as const,
-    },
-    {
-      title: 'Satisfaction Rate',
-      value: `${(displayStats as any).satisfaction_rate || '0.0'}/5.0`,
-      description: 'User satisfaction rating',
-      icon: TrendingUp,
-      color: 'purple' as const,
-    },
-  ];
 
   return (
     <div className="p-6 max-w-6xl mx-auto">
@@ -221,13 +188,13 @@ export const StatsOverview: React.FC<StatsOverviewProps> = ({ project }) => {
 
       {/* Error State */}
       {statsError && (
-        <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-          <div className="flex items-center gap-2 text-yellow-800">
+        <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+          <div className="flex items-center gap-2 text-red-800">
             <AlertCircle className="w-5 h-5" />
-            <span className="font-medium">Stats API Not Available</span>
+            <span className="font-medium">Error loading statistics</span>
           </div>
-          <p className="text-yellow-700 mt-1 text-sm">
-            Showing example statistics. Connect to your analytics to see real data.
+          <p className="text-red-700 mt-1 text-sm">
+            Statistics features are not yet available.
           </p>
         </div>
       )}
@@ -270,7 +237,7 @@ export const StatsOverview: React.FC<StatsOverviewProps> = ({ project }) => {
                   </div>
                   <div>
                     <span className="text-brand-600 font-medium">Last Activity:</span>
-                    <span className="text-brand-800 ml-2">{formatTimestamp(displayStats.last_activity)}</span>
+                    <span className="text-brand-800 ml-2">{displayStats.last_activity ? formatTimestamp(displayStats.last_activity) : 'N/A'}</span>
                   </div>
                 </div>
               </div>
@@ -291,15 +258,6 @@ export const StatsOverview: React.FC<StatsOverviewProps> = ({ project }) => {
             </div>
           </div>
 
-          {/* Performance Metrics */}
-          <div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Performance Metrics</h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {performanceMetrics.map((metric, index) => (
-                <StatCard key={index} {...metric} />
-              ))}
-            </div>
-          </div>
 
           {/* Quick Actions */}
           <Card className="p-6">
@@ -335,38 +293,6 @@ export const StatsOverview: React.FC<StatsOverviewProps> = ({ project }) => {
             </div>
           </Card>
 
-          {/* Insights */}
-          <Card className="p-6 bg-green-50 border-green-200">
-            <h3 className="text-lg font-semibold text-green-900 mb-3">
-              Performance Insights
-            </h3>
-            
-            <div className="space-y-3 text-sm text-green-800">
-              <div className="flex items-start gap-2">
-                <TrendingUp className="w-4 h-4 text-green-600 mt-0.5" />
-                <p>
-                  <strong>Growing Usage:</strong> Your agent is experiencing steady growth with 
-                  {((displayStats as any).monthly_growth || 0).toFixed(1)}% increase in conversations this month.
-                </p>
-              </div>
-              
-              <div className="flex items-start gap-2">
-                <Clock className="w-4 h-4 text-green-600 mt-0.5" />
-                <p>
-                  <strong>Fast Response Times:</strong> Average response time of 
-                  {(displayStats as any).avg_response_time || '1.2'}s provides excellent user experience.
-                </p>
-              </div>
-              
-              <div className="flex items-start gap-2">
-                <Users className="w-4 h-4 text-green-600 mt-0.5" />
-                <p>
-                  <strong>High Satisfaction:</strong> User satisfaction rate of 
-                  {(displayStats as any).satisfaction_rate || '4.6'}/5.0 indicates quality responses.
-                </p>
-              </div>
-            </div>
-          </Card>
         </div>
       )}
     </div>

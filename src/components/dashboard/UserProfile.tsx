@@ -28,11 +28,14 @@ import {
   Copy,
   Lock,
   Users,
-  Building
+  Building,
+  HardDrive,
+  Bot
 } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
+import { useLimits } from '@/hooks/useLimits';
 
 interface UserProfileProps {
   className?: string;
@@ -118,6 +121,7 @@ export const UserProfile: React.FC<UserProfileProps> = ({ className }) => {
   const [activeTab, setActiveTab] = useState('profile');
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [showApiKey, setShowApiKey] = useState(false);
+  const { limits, isLoading: limitsLoading, error: limitsError } = useLimits();
 
   // Profile state
   const [profile, setProfile] = useState({
@@ -475,52 +479,106 @@ export const UserProfile: React.FC<UserProfileProps> = ({ className }) => {
       </div>
 
       {/* Usage */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-        <div className="bg-white rounded-lg border border-gray-200 p-6">
-          <div className="flex items-center gap-3 mb-4">
-            <Zap className="h-5 w-5 text-orange-600" />
-            <h3 className="font-semibold text-gray-900">Query Usage</h3>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+        {limitsLoading ? (
+          // Loading skeleton
+          Array.from({ length: 3 }).map((_, index) => (
+            <div key={index} className="bg-white rounded-lg border border-gray-200 p-6 animate-pulse">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-8 h-8 bg-gray-200 rounded"></div>
+                <div className="h-5 bg-gray-200 rounded w-24"></div>
+              </div>
+              <div className="space-y-2">
+                <div className="h-4 bg-gray-200 rounded w-full"></div>
+                <div className="h-4 bg-gray-200 rounded w-full"></div>
+                <div className="h-2 bg-gray-200 rounded-full w-full"></div>
+              </div>
+            </div>
+          ))
+        ) : limitsError ? (
+          // Error state
+          <div className="col-span-full bg-red-50 rounded-lg border border-red-200 p-6">
+            <div className="flex items-center gap-3">
+              <AlertCircle className="h-5 w-5 text-red-600" />
+              <div>
+                <p className="font-medium text-red-900">Failed to load usage limits</p>
+                <p className="text-sm text-red-700 mt-1">Please check your connection and try again.</p>
+              </div>
+            </div>
           </div>
-          <div className="space-y-2">
-            <div className="flex justify-between">
-              <span className="text-gray-600">Used</span>
-              <span className="font-medium">{subscription.usage.queries.toLocaleString()}</span>
+        ) : limits ? (
+          // Real data from API
+          <>
+            <div className="bg-white rounded-lg border border-gray-200 p-6">
+              <div className="flex items-center gap-3 mb-4">
+                <Zap className="h-5 w-5 text-orange-600" />
+                <h3 className="font-semibold text-gray-900">Query Usage</h3>
+              </div>
+              <div className="space-y-2">
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Used</span>
+                  <span className="font-medium">{limits.current_queries.toLocaleString()}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Limit</span>
+                  <span className="font-medium">{limits.max_queries.toLocaleString()}</span>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div 
+                    className="bg-orange-600 h-2 rounded-full transition-all duration-300"
+                    style={{ width: `${Math.min((limits.current_queries / limits.max_queries) * 100, 100)}%` }}
+                  />
+                </div>
+              </div>
             </div>
-            <div className="flex justify-between">
-              <span className="text-gray-600">Limit</span>
-              <span className="font-medium">{subscription.usage.limit.toLocaleString()}</span>
-            </div>
-            <div className="w-full bg-gray-200 rounded-full h-2">
-              <div 
-                className="bg-orange-600 h-2 rounded-full"
-                style={{ width: `${(subscription.usage.queries / subscription.usage.limit) * 100}%` }}
-              />
-            </div>
-          </div>
-        </div>
 
-        <div className="bg-white rounded-lg border border-gray-200 p-6">
-          <div className="flex items-center gap-3 mb-4">
-            <User className="h-5 w-5 text-blue-600" />
-            <h3 className="font-semibold text-gray-900">Agents</h3>
-          </div>
-          <div className="space-y-2">
-            <div className="flex justify-between">
-              <span className="text-gray-600">Created</span>
-              <span className="font-medium">{subscription.usage.agents}</span>
+            <div className="bg-white rounded-lg border border-gray-200 p-6">
+              <div className="flex items-center gap-3 mb-4">
+                <Bot className="h-5 w-5 text-blue-600" />
+                <h3 className="font-semibold text-gray-900">Projects</h3>
+              </div>
+              <div className="space-y-2">
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Created</span>
+                  <span className="font-medium">{limits.current_projects_num}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Limit</span>
+                  <span className="font-medium">{limits.max_projects_num}</span>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div 
+                    className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                    style={{ width: `${Math.min((limits.current_projects_num / limits.max_projects_num) * 100, 100)}%` }}
+                  />
+                </div>
+              </div>
             </div>
-            <div className="flex justify-between">
-              <span className="text-gray-600">Limit</span>
-              <span className="font-medium">{subscription.usage.agentLimit}</span>
+
+            <div className="bg-white rounded-lg border border-gray-200 p-6">
+              <div className="flex items-center gap-3 mb-4">
+                <HardDrive className="h-5 w-5 text-green-600" />
+                <h3 className="font-semibold text-gray-900">Storage Credits</h3>
+              </div>
+              <div className="space-y-2">
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Used</span>
+                  <span className="font-medium">{limits.current_total_storage_credits}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Limit</span>
+                  <span className="font-medium">{limits.max_total_storage_credits}</span>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div 
+                    className="bg-green-600 h-2 rounded-full transition-all duration-300"
+                    style={{ width: `${Math.min((limits.current_total_storage_credits / limits.max_total_storage_credits) * 100, 100)}%` }}
+                  />
+                </div>
+              </div>
             </div>
-            <div className="w-full bg-gray-200 rounded-full h-2">
-              <div 
-                className="bg-blue-600 h-2 rounded-full"
-                style={{ width: `${(subscription.usage.agents / subscription.usage.agentLimit) * 100}%` }}
-              />
-            </div>
-          </div>
-        </div>
+          </>
+        ) : null}
       </div>
 
       {/* Payment Method */}

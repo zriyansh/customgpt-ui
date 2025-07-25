@@ -14,10 +14,13 @@ import {
   Zap,
   FileText,
   Database,
-  Activity
+  Activity,
+  HardDrive,
+  AlertCircle
 } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
+import { useLimits } from '@/hooks/useLimits';
 
 interface MetricCardProps {
   title: string;
@@ -168,35 +171,49 @@ const ActivityItem: React.FC<{ item: RecentActivityItem }> = ({ item }) => {
 };
 
 export const DashboardOverview: React.FC = () => {
-  // Mock data - in real app, this would come from API
+  const { limits, isLoading, error } = useLimits();
+
+  // Calculate percentages for display
+  const projectsUsagePercentage = limits 
+    ? Math.round((limits.current_projects_num / limits.max_projects_num) * 100) 
+    : 0;
+  const storageUsagePercentage = limits 
+    ? Math.round((limits.current_total_storage_credits / limits.max_total_storage_credits) * 100)
+    : 0;
+  const queriesUsagePercentage = limits 
+    ? Math.round((limits.current_queries / limits.max_queries) * 100)
+    : 0;
+
   const metrics = [
     {
-      title: 'Total Agents',
-      value: 12,
-      change: { value: '+2 this month', trend: 'up' as const },
+      title: 'Projects',
+      value: limits ? `${limits.current_projects_num}/${limits.max_projects_num}` : '-',
+      change: { value: `${projectsUsagePercentage}% used`, trend: 'neutral' as const },
       icon: Bot,
       color: 'blue' as const,
     },
     {
-      title: 'Conversations',
-      value: '1,234',
-      change: { value: '+15% from last month', trend: 'up' as const },
-      icon: MessageSquare,
+      title: 'Storage Credits',
+      value: limits ? `${limits.current_total_storage_credits}/${limits.max_total_storage_credits}` : '-',
+      change: { value: `${storageUsagePercentage}% used`, trend: 'neutral' as const },
+      icon: HardDrive,
       color: 'green' as const,
     },
     {
-      title: 'Active Users',
-      value: 89,
-      change: { value: '+8% from last month', trend: 'up' as const },
-      icon: Users,
+      title: 'Queries',
+      value: limits ? `${limits.current_queries.toLocaleString()}/${limits.max_queries.toLocaleString()}` : '-',
+      change: { value: `${queriesUsagePercentage}% used`, trend: 'neutral' as const },
+      icon: MessageSquare,
       color: 'purple' as const,
     },
     {
-      title: 'Total Queries',
-      value: '5.2K',
-      change: { value: '+12% from last month', trend: 'up' as const },
-      icon: BarChart3,
-      color: 'orange' as const,
+      title: 'API Status',
+      value: error ? 'Error' : 'Active',
+      change: error 
+        ? { value: 'Connection issue', trend: 'down' as const }
+        : { value: 'All systems operational', trend: 'up' as const },
+      icon: Activity,
+      color: error ? 'red' as const : 'orange' as const,
     },
   ];
 
@@ -283,9 +300,37 @@ export const DashboardOverview: React.FC = () => {
 
       {/* Metrics Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {metrics.map((metric, index) => (
-          <MetricCard key={index} {...metric} />
-        ))}
+        {isLoading ? (
+          // Loading skeleton
+          Array.from({ length: 4 }).map((_, index) => (
+            <div key={index} className="bg-white rounded-lg border border-gray-200 p-6 animate-pulse">
+              <div className="flex items-center justify-between">
+                <div className="flex-1">
+                  <div className="h-4 bg-gray-200 rounded w-20 mb-2"></div>
+                  <div className="h-8 bg-gray-200 rounded w-32 mb-2"></div>
+                  <div className="h-4 bg-gray-200 rounded w-24"></div>
+                </div>
+                <div className="w-12 h-12 rounded-lg bg-gray-200"></div>
+              </div>
+            </div>
+          ))
+        ) : error ? (
+          // Error state
+          <div className="col-span-full bg-red-50 rounded-lg border border-red-200 p-6">
+            <div className="flex items-center gap-3">
+              <AlertCircle className="h-5 w-5 text-red-600" />
+              <div>
+                <p className="font-medium text-red-900">Failed to load usage limits</p>
+                <p className="text-sm text-red-700 mt-1">Please check your connection and try again.</p>
+              </div>
+            </div>
+          </div>
+        ) : (
+          // Metrics display
+          metrics.map((metric, index) => (
+            <MetricCard key={index} {...metric} />
+          ))
+        )}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">

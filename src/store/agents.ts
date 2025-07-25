@@ -51,12 +51,7 @@ export const useAgentStore = create<AgentStore>()(
       createAgent: async (data: {
         project_name: string;
         sitemap_path?: string;
-        default_prompt?: string;
-        example_questions?: string[];
-        persona_instructions?: string;
-        chatbot_color?: string;
-        chatbot_model?: string;
-        chatbot_msg_lang?: string;
+        files?: File[];
         is_shared?: boolean;
       }) => {
         set({ loading: true, error: null });
@@ -99,6 +94,94 @@ export const useAgentStore = create<AgentStore>()(
             return stillExists || (agents.length > 0 ? agents[0] : null);
           })()
         });
+      },
+      
+      updateAgent: async (id: number, data: { are_licenses_allowed?: boolean }) => {
+        set({ loading: true, error: null });
+        
+        try {
+          const client = getClient();
+          const response = await client.updateAgent(id, data);
+          const updatedAgent = response.data;
+          
+          set(state => ({
+            agents: state.agents.map(a => a.id === id ? updatedAgent : a),
+            currentAgent: state.currentAgent?.id === id ? updatedAgent : state.currentAgent,
+            loading: false,
+          }));
+          
+          return updatedAgent;
+        } catch (error) {
+          console.error('Failed to update agent:', error);
+          set({ 
+            error: error instanceof Error ? error.message : 'Failed to update agent',
+            loading: false 
+          });
+          throw error;
+        }
+      },
+      
+      deleteAgent: async (id: number) => {
+        set({ loading: true, error: null });
+        
+        try {
+          const client = getClient();
+          await client.deleteAgent(id);
+          
+          set(state => {
+            const filteredAgents = state.agents.filter(a => a.id !== id);
+            return {
+              agents: filteredAgents,
+              currentAgent: state.currentAgent?.id === id 
+                ? (filteredAgents.length > 0 ? filteredAgents[0] : null)
+                : state.currentAgent,
+              loading: false,
+            };
+          });
+        } catch (error) {
+          console.error('Failed to delete agent:', error);
+          set({ 
+            error: error instanceof Error ? error.message : 'Failed to delete agent',
+            loading: false 
+          });
+          throw error;
+        }
+      },
+      
+      replicateAgent: async (id: number) => {
+        set({ loading: true, error: null });
+        
+        try {
+          const client = getClient();
+          const response = await client.replicateAgent(id);
+          const newAgent = response.data;
+          
+          set(state => ({ 
+            agents: [newAgent, ...state.agents],
+            currentAgent: newAgent,
+            loading: false,
+          }));
+          
+          return newAgent;
+        } catch (error) {
+          console.error('Failed to replicate agent:', error);
+          set({ 
+            error: error instanceof Error ? error.message : 'Failed to replicate agent',
+            loading: false 
+          });
+          throw error;
+        }
+      },
+      
+      getAgentStats: async (id: number) => {
+        try {
+          const client = getClient();
+          const response = await client.getAgentStats(id);
+          return response.data;
+        } catch (error) {
+          console.error('Failed to get agent stats:', error);
+          throw error;
+        }
       },
     }),
     {

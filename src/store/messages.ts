@@ -89,7 +89,7 @@ export const useMessageStore = create<MessageStore>((set, get) => ({
     };
 
     // Add user message to store
-    get().addMessage(conversation.id, userMessage);
+    get().addMessage(conversation.id.toString(), userMessage);
 
     // Create assistant message placeholder
     const assistantMessage: ChatMessage = {
@@ -117,7 +117,7 @@ export const useMessageStore = create<MessageStore>((set, get) => ({
 
       // Update user message status
       userMessage.status = 'sent';
-      get().addMessage(conversation.id, userMessage);
+      get().addMessage(conversation.id.toString(), userMessage);
 
       // Start streaming with correct parameters
       const client = getClient();
@@ -128,68 +128,122 @@ export const useMessageStore = create<MessageStore>((set, get) => ({
         messageContent: content.substring(0, 50)
       });
       
-      await client.sendMessageStream(
-        currentAgent.id,
-        conversation.session_id,  // Use session_id instead of id
-        { 
-          prompt: content,
-          stream: 1  // Include stream parameter in body as per SDK examples
-        },
-        {
-          onChunk: (chunk) => {
-            logger.debug('MESSAGES', 'Received stream chunk', { 
-              type: chunk.type, 
-              hasContent: !!chunk.content,
-              contentLength: chunk.content?.length,
-              contentPreview: chunk.content?.substring(0, 50)
-            });
-            
-            if (chunk.type === 'content' && chunk.content) {
-              get().updateStreamingMessage(chunk.content, chunk.citations);
-            } else if (chunk.type === 'citation' && chunk.citations) {
-              // Handle citation-only chunks
-              const current = get().streamingMessage;
-              if (current) {
-                set({
-                  streamingMessage: {
-                    ...current,
-                    citations: chunk.citations
+      try {
+        await client.sendMessageStream(
+          currentAgent.id,
+          conversation.session_id,  // Use session_id instead of id
+          { 
+            prompt: content,
+            response_source: 'default',  // Required field as per API documentation
+            stream: 1  // Include stream parameter in body as per SDK examples
+          },
+          {
+            onChunk: (chunk) => {
+              logger.debug('MESSAGES', 'Received stream chunk', { 
+                type: chunk.type, 
+                hasContent: !!chunk.content,
+                contentLength: chunk.content?.length,
+                contentPreview: chunk.content?.substring(0, 50)
+              });
+              
+              if (chunk.type === 'content' && chunk.content) {
+                get().updateStreamingMessage(chunk.content, chunk.citations);
+              } else if (chunk.type === 'citation' && chunk.citations) {
+                // Handle citation-only chunks
+                const current = get().streamingMessage;
+                if (current) {
+                  set({
+                    streamingMessage: {
+                      ...current,
+                      citations: chunk.citations
+                    }
+                  });
+                }
+              }
+            },
+            onComplete: () => {
+              const finalMessage = get().streamingMessage;
+              if (finalMessage) {
+                finalMessage.status = 'sent';
+                get().addMessage(conversation.id.toString(), finalMessage);
+              }
+              
+              set({ 
+                streamingMessage: null,
+                isStreaming: false,
+              });
+            },
+            onError: async (streamError) => {
+              logger.error('MESSAGES', 'Streaming failed, attempting fallback to non-streaming', streamError, {
+                errorMessage: streamError.message,
+                agentId: currentAgent.id,
+                sessionId: conversation.session_id
+              });
+              
+              // Try fallback to non-streaming API
+              try {
+                logger.info('MESSAGES', 'Using non-streaming fallback');
+                
+                const response = await client.sendMessage(
+                  currentAgent.id,
+                  conversation.session_id,
+                  { 
+                    prompt: content,
+                    response_source: 'default',  // Required field as per API documentation
+                    stream: 0  // Explicitly disable streaming
                   }
+                );
+                
+                // Update streaming message with the complete response
+                const finalMessage = get().streamingMessage;
+                if (finalMessage && response) {
+                  // Handle different response formats from API
+                  let messageData: any;
+                  if (response.data) {
+                    messageData = response.data;
+                  } else {
+                    // Direct response format - cast to any to handle the actual API structure
+                    messageData = response as any;
+                  }
+                  
+                  finalMessage.content = messageData?.openai_response || messageData?.content || 'No response received';
+                  finalMessage.citations = messageData?.citations || [];
+                  finalMessage.status = 'sent';
+                  get().addMessage(conversation.id.toString(), finalMessage);
+                }
+                
+                set({ 
+                  streamingMessage: null,
+                  isStreaming: false,
+                });
+                
+                logger.info('MESSAGES', 'Fallback to non-streaming successful');
+                
+              } catch (fallbackError) {
+                logger.error('MESSAGES', 'Both streaming and non-streaming failed', fallbackError);
+                console.error('Both streaming and fallback failed:', fallbackError);
+                
+                // Update assistant message with error
+                const errorMessage = get().streamingMessage;
+                if (errorMessage) {
+                  errorMessage.content = 'Sorry, I encountered an error while processing your message. Please try again.';
+                  errorMessage.status = 'error';
+                  get().addMessage(conversation.id.toString(), errorMessage);
+                }
+                
+                set({ 
+                  streamingMessage: null,
+                  isStreaming: false,
+                  error: `Communication error: ${fallbackError instanceof Error ? fallbackError.message : 'Unknown error'}`,
                 });
               }
-            }
-          },
-          onComplete: () => {
-            const finalMessage = get().streamingMessage;
-            if (finalMessage) {
-              finalMessage.status = 'sent';
-              get().addMessage(conversation.id, finalMessage);
-            }
-            
-            set({ 
-              streamingMessage: null,
-              isStreaming: false,
-            });
-          },
-          onError: (error) => {
-            console.error('Streaming error:', error);
-            
-            // Update assistant message with error
-            const errorMessage = get().streamingMessage;
-            if (errorMessage) {
-              errorMessage.content = 'Sorry, I encountered an error while processing your message.';
-              errorMessage.status = 'error';
-              get().addMessage(conversation.id, errorMessage);
-            }
-            
-            set({ 
-              streamingMessage: null,
-              isStreaming: false,
-              error: error.message,
-            });
-          },
-        }
-      );
+            },
+          }
+        );
+      } catch (setupError) {
+        logger.error('MESSAGES', 'Failed to setup streaming', setupError);
+        throw setupError;
+      }
     } catch (error) {
       logger.error('MESSAGES', 'Failed to send message', error, {
         errorType: error instanceof Error ? error.constructor.name : typeof error,
@@ -203,7 +257,7 @@ export const useMessageStore = create<MessageStore>((set, get) => ({
       
       // Update user message status
       userMessage.status = 'error';
-      get().addMessage(conversation.id, userMessage);
+      get().addMessage(conversation.id.toString(), userMessage);
       
       set({ 
         streamingMessage: null,
@@ -275,7 +329,7 @@ export const useMessageStore = create<MessageStore>((set, get) => ({
     if (!currentAgent || !currentConversation) return;
 
     // Find the message
-    const conversationMessages = get().messages.get(currentConversation.id) || [];
+    const conversationMessages = get().messages.get(currentConversation.id.toString()) || [];
     const message = conversationMessages.find(m => m.id === messageId);
     
     if (!message) return;
@@ -283,7 +337,7 @@ export const useMessageStore = create<MessageStore>((set, get) => ({
     try {
       // Update local state immediately
       const updatedMessage = { ...message, feedback };
-      get().addMessage(currentConversation.id, updatedMessage);
+      get().addMessage(currentConversation.id.toString(), updatedMessage);
 
       // Send to API (assuming we have the prompt ID)
       // Note: This would need to be adjusted based on the actual API structure
@@ -294,7 +348,7 @@ export const useMessageStore = create<MessageStore>((set, get) => ({
     } catch (error) {
       console.error('Failed to update message feedback:', error);
       // Revert local state on error
-      get().addMessage(currentConversation.id, message);
+      get().addMessage(currentConversation.id.toString(), message);
     }
   },
 
@@ -324,7 +378,7 @@ export const useMessageStore = create<MessageStore>((set, get) => ({
     }
 
     // Find the conversation to get its session_id
-    const conversation = conversations.find(c => c.id === conversationId);
+    const conversation = conversations.find(c => c.id.toString() === conversationId);
     if (!conversation) {
       logger.error('MESSAGES', 'Conversation not found', { conversationId });
       set({ error: 'Conversation not found', loading: false });
@@ -350,10 +404,13 @@ export const useMessageStore = create<MessageStore>((set, get) => ({
         dataLength: Array.isArray((response as any)?.data) ? (response as any).data.length : 0
       });
       
-      // Handle different response formats
+      // Handle different response formats from the API
       let messages = [];
       if (response && typeof response === 'object') {
-        if (Array.isArray((response as any).data)) {
+        // API documentation shows response format: { status: "success", data: { conversation: {...}, messages: { data: [...] } } }
+        if ((response as any).data && (response as any).data.messages && Array.isArray((response as any).data.messages.data)) {
+          messages = (response as any).data.messages.data;
+        } else if (Array.isArray((response as any).data)) {
           messages = (response as any).data;
         } else if (Array.isArray(response)) {
           messages = response;
@@ -369,17 +426,38 @@ export const useMessageStore = create<MessageStore>((set, get) => ({
       });
       
       // Convert API messages to our format
-      const formattedMessages: ChatMessage[] = Array.isArray(messages) 
-        ? messages.map(msg => ({
-            id: msg.id || String(Math.random()),
-            role: msg.role || 'user',
-            content: msg.content || '',
-            citations: msg.citations || [],
-            timestamp: msg.timestamp || new Date().toISOString(),
-            status: 'sent' as const,
-            feedback: msg.feedback,
-          }))
-        : [];
+      // Each API message contains both user_query and openai_response, so we need to create two ChatMessage objects
+      const formattedMessages: ChatMessage[] = [];
+      
+      if (Array.isArray(messages)) {
+        messages.forEach(msg => {
+          const baseTimestamp = msg.created_at || msg.timestamp || new Date().toISOString();
+          
+          // Add user message
+          if (msg.user_query) {
+            formattedMessages.push({
+              id: `${msg.id}-user` || `user-${Math.random()}`,
+              role: 'user',
+              content: msg.user_query,
+              timestamp: baseTimestamp,
+              status: 'sent' as const,
+            });
+          }
+          
+          // Add assistant message
+          if (msg.openai_response) {
+            formattedMessages.push({
+              id: `${msg.id}-assistant` || `assistant-${Math.random()}`,
+              role: 'assistant',
+              content: msg.openai_response,
+              citations: msg.citations || [],
+              timestamp: baseTimestamp,
+              status: 'sent' as const,
+              feedback: msg.response_feedback?.reaction || msg.feedback,
+            });
+          }
+        });
+      }
 
       logger.info('MESSAGES', 'Messages formatted successfully', {
         conversationId,

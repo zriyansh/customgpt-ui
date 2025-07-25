@@ -39,7 +39,7 @@ import { BehaviorSettings } from '@/components/projects/BehaviorSettings';
 import { SourcesSettings } from '@/components/projects/SourcesSettings';
 import { PagesSettings } from '@/components/projects/PagesSettings';
 import { ConversationsSettings } from '@/components/projects/ConversationsSettings';
-import { AnalyticsSettings } from '@/components/projects/AnalyticsSettings';
+import { ReportsAnalytics } from '@/components/projects/ReportsAnalytics';
 import { SecuritySettings } from '@/components/projects/SecuritySettings';
 import { IntegrationsSettings } from '@/components/projects/IntegrationsSettings';
 import { MonetizationSettings } from '@/components/projects/MonetizationSettings';
@@ -53,7 +53,7 @@ const settingsTabs = [
   { id: 'sources' as SettingsTab, label: 'Data Sources', icon: Database, description: 'Upload files, add websites, manage data' },
   { id: 'pages' as SettingsTab, label: 'Content Pages', icon: FileText, description: 'Manage indexed content and metadata' },
   { id: 'conversations' as SettingsTab, label: 'Conversations', icon: Users, description: 'Chat history, sharing, and management' },
-  { id: 'analytics' as SettingsTab, label: 'Analytics', icon: BarChart3, description: 'Usage stats, reports, and insights' },
+  { id: 'analytics' as SettingsTab, label: 'Reports & Analytics', icon: BarChart3, description: 'Traffic, queries, and conversation reports' },
   { id: 'security' as SettingsTab, label: 'Security', icon: Shield, description: 'Access control, anti-hallucination, visibility' },
   { id: 'integrations' as SettingsTab, label: 'Integrations', icon: Link, description: 'API access, plugins, and connections' },
   { id: 'monetization' as SettingsTab, label: 'Monetization', icon: DollarSign, description: 'Licensing, selling, and premium features' },
@@ -196,7 +196,7 @@ export default function ProjectsPage() {
       case 'conversations':
         return <ConversationsSettings project={selectedProject} />;
       case 'analytics':
-        return <AnalyticsSettings project={selectedProject} />;
+        return <ReportsAnalytics project={selectedProject} />;
       case 'security':
         return <SecuritySettings project={selectedProject} />;
       case 'integrations':

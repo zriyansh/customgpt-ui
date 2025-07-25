@@ -89,64 +89,6 @@ export const SecuritySettings: React.FC<SecuritySettingsProps> = ({ project }) =
   const [error, setError] = useState<string | null>(null);
   const [showApiKeys, setShowApiKeys] = useState(false);
 
-  // Mock security configuration
-  const mockConfig: SecurityConfig = {
-    anti_hallucination: {
-      enabled: true,
-      strictness_level: 'medium',
-      custom_prompts: [
-        'Please base your response only on the provided information',
-        'If you are unsure about something, please say so clearly'
-      ]
-    },
-    agent_visibility: {
-      public: false,
-      discoverable: false,
-      require_authentication: true,
-      allowed_domains: ['example.com', 'app.example.com']
-    },
-    recaptcha: {
-      enabled: true,
-      site_key: '6Lc-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
-      threshold: 0.5
-    },
-    whitelisted_domains: ['example.com', 'trusted-partner.com'],
-    blacklisted_domains: ['spam-site.com', 'malicious-domain.net'],
-    rate_limiting: {
-      enabled: true,
-      requests_per_minute: 60,
-      requests_per_hour: 1000,
-      block_duration_minutes: 15
-    },
-    data_retention: {
-      conversation_retention_days: 90,
-      analytics_retention_days: 365,
-      auto_delete_enabled: true
-    },
-    access_control: {
-      api_keys: [
-        {
-          id: '1',
-          name: 'Main API Key',
-          key: 'sk-proj-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
-          permissions: ['read', 'write', 'admin'],
-          created_at: '2024-01-10T10:00:00Z',
-          last_used: '2024-01-16T14:30:00Z',
-          is_active: true
-        },
-        {
-          id: '2',
-          name: 'Read-Only Key',
-          key: 'sk-proj-yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy',
-          permissions: ['read'],
-          created_at: '2024-01-15T09:15:00Z',
-          is_active: true
-        }
-      ],
-      ip_whitelist: ['203.0.113.1', '198.51.100.0/24'],
-      ip_blacklist: ['192.0.2.1', '198.51.99.0/24']
-    }
-  };
 
   useEffect(() => {
     loadSecurityConfig();
@@ -157,9 +99,8 @@ export const SecuritySettings: React.FC<SecuritySettingsProps> = ({ project }) =
     setError(null);
 
     try {
-      // Mock API call - replace with actual API
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      setConfig(mockConfig);
+      // TODO: Implement actual API call when security API is available
+      setError('Security features are not yet available');
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to load security configuration';
       setError(errorMessage);

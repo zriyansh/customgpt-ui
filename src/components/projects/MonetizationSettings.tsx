@@ -112,142 +112,6 @@ export const MonetizationSettings: React.FC<MonetizationSettingsProps> = ({ proj
   const [error, setError] = useState<string | null>(null);
   const [activeView, setActiveView] = useState<'settings' | 'plans' | 'analytics' | 'payments'>('settings');
 
-  // Mock data
-  const mockConfig: MonetizationConfig = {
-    enabled: true,
-    pricing_model: 'freemium',
-    subscription_plans: [
-      {
-        id: '1',
-        name: 'Starter',
-        price: 9.99,
-        billing_period: 'monthly',
-        features: [
-          '1,000 messages per month',
-          '100 API calls per day',
-          '5GB storage',
-          'Email support'
-        ],
-        limits: {
-          messages_per_month: 1000,
-          api_calls_per_day: 100,
-          storage_gb: 5,
-          custom_branding: false,
-          priority_support: false
-        },
-        is_active: true,
-        subscriber_count: 47
-      },
-      {
-        id: '2',
-        name: 'Professional',
-        price: 29.99,
-        billing_period: 'monthly',
-        features: [
-          '10,000 messages per month',
-          '1,000 API calls per day',
-          '50GB storage',
-          'Custom branding',
-          'Priority support'
-        ],
-        limits: {
-          messages_per_month: 10000,
-          api_calls_per_day: 1000,
-          storage_gb: 50,
-          custom_branding: true,
-          priority_support: true
-        },
-        is_active: true,
-        subscriber_count: 23
-      },
-      {
-        id: '3',
-        name: 'Enterprise',
-        price: 99.99,
-        billing_period: 'monthly',
-        features: [
-          'Unlimited messages',
-          'Unlimited API calls',
-          '500GB storage',
-          'Custom branding',
-          'Dedicated support',
-          'SLA guarantee'
-        ],
-        limits: {
-          messages_per_month: -1,
-          api_calls_per_day: -1,
-          storage_gb: 500,
-          custom_branding: true,
-          priority_support: true
-        },
-        is_active: true,
-        subscriber_count: 8
-      }
-    ],
-    usage_pricing: {
-      price_per_message: 0.01,
-      price_per_api_call: 0.005,
-      free_tier_limits: {
-        messages_per_month: 100,
-        api_calls_per_month: 50
-      }
-    },
-    revenue_sharing: {
-      enabled: true,
-      platform_fee_percentage: 15,
-      minimum_payout: 100,
-      payout_schedule: 'monthly'
-    },
-    payment_settings: {
-      stripe_connected: true,
-      supported_currencies: ['USD', 'EUR', 'GBP'],
-      tax_handling: 'automatic',
-      invoice_customization: true
-    }
-  };
-
-  const mockStats: RevenueStats = {
-    total_revenue: 12847.50,
-    monthly_recurring_revenue: 2340.22,
-    active_subscribers: 78,
-    churn_rate: 5.2,
-    average_revenue_per_user: 30.01,
-    revenue_growth_rate: 18.7,
-    top_plans: [
-      { plan_name: 'Starter', revenue: 1199.06, subscribers: 47 },
-      { plan_name: 'Professional', revenue: 1379.77, subscribers: 23 },
-      { plan_name: 'Enterprise', revenue: 1599.84, subscribers: 8 }
-    ],
-    recent_transactions: [
-      {
-        id: '1',
-        customer_email: 'user@example.com',
-        amount: 29.99,
-        currency: 'USD',
-        plan: 'Professional',
-        status: 'completed',
-        created_at: '2024-01-16T10:30:00Z'
-      },
-      {
-        id: '2',
-        customer_email: 'business@company.com',
-        amount: 99.99,
-        currency: 'USD',
-        plan: 'Enterprise',
-        status: 'completed',
-        created_at: '2024-01-16T09:15:00Z'
-      },
-      {
-        id: '3',
-        customer_email: 'startup@test.com',
-        amount: 9.99,
-        currency: 'USD',
-        plan: 'Starter',
-        status: 'pending',
-        created_at: '2024-01-15T16:45:00Z'
-      }
-    ]
-  };
 
   useEffect(() => {
     loadMonetizationData();
@@ -258,10 +122,8 @@ export const MonetizationSettings: React.FC<MonetizationSettingsProps> = ({ proj
     setError(null);
 
     try {
-      // Mock API calls
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      setConfig(mockConfig);
-      setStats(mockStats);
+      // TODO: Implement actual API call when monetization API is available
+      setError('Monetization features are not yet available');
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to load monetization data';
       setError(errorMessage);

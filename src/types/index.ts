@@ -3,51 +3,104 @@
 export interface Agent {
   id: number;
   project_name: string;
-  sitemap_path: string;
+  sitemap_path?: string;
   is_chat_active: boolean;
+  user_id: number;
+  team_id: number;
   created_at: string;
   updated_at: string;
+  deleted_at?: string | null;
+  type: 'SITEMAP' | 'FILE' | string;
+  is_shared: boolean;
+  shareable_slug?: string;
+  shareable_link?: string;
+  embed_code?: string;
+  live_chat_code?: string;
+  are_licenses_allowed?: boolean;
   settings?: AgentSettings;
 }
 
+export interface AgentStats {
+  pages_found: number;
+  pages_crawled: number;
+  pages_indexed: number;
+  crawl_credits_used: number;
+  query_credits_used: number;
+  total_queries: number;
+  total_words_indexed: number;
+  total_storage_credits_used: number;
+}
+
 export interface AgentSettings {
-  default_prompt?: string;
-  example_questions?: string[];
-  response_source?: 'default' | 'own_content' | 'openai_content';
-  chatbot_msg_lang?: string;
+  // Appearance
+  chatbot_avatar?: string;
+  chatbot_background_type?: 'image' | 'color';
+  chatbot_background?: string;
+  chatbot_background_color?: string;
   chatbot_color?: string;
   chatbot_toolbar_color?: string;
-  persona_instructions?: string;
-  citations_answer_source_label_msg?: string;
-  citations_sources_label_msg?: string;
-  hang_in_there_msg?: string;
-  chatbot_siesta_msg?: string;
-  is_loading_indicator_enabled?: boolean;
-  enable_citations?: 0 | 1 | 2 | 3;
-  enable_feedbacks?: boolean;
-  citations_view_type?: 'user' | 'show' | 'hide';
-  no_answer_message?: string;
-  ending_message?: string;
-  remove_branding?: boolean;
-  enable_recaptcha_for_public_chatbots?: boolean;
-  chatbot_model?: string;
-  is_selling_enabled?: boolean;
-  can_share_conversation?: boolean;
-  can_export_conversation?: boolean;
-  hide_sources_from_responses?: boolean;
-  agent_capability?: string;
-  input_field_addendum?: string;
   chatbot_title?: string;
   chatbot_title_color?: string;
+  user_avatar?: string;
+  spotlight_avatar_enabled?: boolean;
+  spotlight_avatar?: string;
+  spotlight_avatar_shape?: 'rectangle' | 'circle';
+  spotlight_avatar_type?: 'default' | 'custom';
+  user_avatar_orientation?: 'agent-left-user-right' | 'agent-right-user-left';
+  
+  // Messages & Behavior
+  default_prompt?: string;
+  example_questions?: string[];
+  persona_instructions?: string;
+  response_source?: 'own_content' | 'openai_content' | 'default';
+  chatbot_model?: string;
+  chatbot_msg_lang?: string;
+  input_field_addendum?: string;
+  
+  // Messages
+  hang_in_there_msg?: string;
+  chatbot_siesta_msg?: string;
+  no_answer_message?: string;
+  ending_message?: string;
+  try_asking_questions_msg?: string;
+  view_more_msg?: string;
+  view_less_msg?: string;
+  
+  // Citations
+  enable_citations?: number;
+  citations_view_type?: 'user' | 'show' | 'hide';
+  citations_answer_source_label_msg?: string;
+  citations_sources_label_msg?: string;
+  image_citation_display?: 'default' | 'inline' | 'none';
+  enable_inline_citations_api?: boolean;
+  hide_sources_from_responses?: boolean;
+  
+  // Features
+  enable_feedbacks?: boolean;
+  is_loading_indicator_enabled?: boolean;
+  remove_branding?: boolean;
+  private_deployment?: boolean;
+  enable_recaptcha_for_public_chatbots?: boolean;
+  is_selling_enabled?: boolean;
+  license_slug?: boolean;
+  selling_url?: string;
+  can_share_conversation?: boolean;
+  can_export_conversation?: boolean;
+  conversation_time_window?: boolean;
+  conversation_retention_period?: 'year' | 'month' | 'week' | 'day';
+  conversation_retention_days?: number;
+  enable_agent_knowledge_base_awareness?: boolean;
+  markdown_enabled?: boolean;
 }
 
 export interface Conversation {
-  id: string;
+  id: number;
   name: string;
   project_id: number;
   session_id: string;  // This is what we need for API calls
   created_at: string;
   updated_at: string;
+  deleted_at: string | null;
   message_count?: number;
   created_by?: number;
 }
@@ -71,6 +124,23 @@ export interface Citation {
   index: number;
   page_id?: number;
   confidence?: number;
+}
+
+export interface CitationOpenGraphData {
+  id: number;
+  url: string;
+  title: string;
+  description: string;
+  image?: string;
+}
+
+export interface AgentLicense {
+  id?: string;
+  name: string;
+  key: string;
+  project_id: number;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface StreamChunk {
@@ -106,10 +176,21 @@ export interface AgentsResponse {
 }
 
 export interface ConversationsResponse {
-  data: Conversation[];
-  total: number;
-  page: number;
-  per_page: number;
+  status: string;
+  data: {
+    current_page: number;
+    data: Conversation[];
+    first_page_url: string;
+    from: number;
+    last_page: number;
+    last_page_url: string;
+    next_page_url: string | null;
+    path: string;
+    per_page: number;
+    prev_page_url: string | null;
+    to: number;
+    total: number;
+  };
 }
 
 export interface MessagesResponse {
@@ -124,7 +205,8 @@ export interface MessageResponse {
 }
 
 export interface CitationResponse {
-  data: Citation;
+  status: string;
+  data: CitationOpenGraphData;
 }
 
 // Configuration Types
@@ -247,16 +329,15 @@ export interface AgentStore {
   createAgent: (data: {
     project_name: string;
     sitemap_path?: string;
-    default_prompt?: string;
-    example_questions?: string[];
-    persona_instructions?: string;
-    chatbot_color?: string;
-    chatbot_model?: string;
-    chatbot_msg_lang?: string;
+    files?: File[];
     is_shared?: boolean;
   }) => Promise<Agent>;
   selectAgent: (agent: Agent) => void;
   setAgents: (agents: Agent[]) => void;
+  updateAgent: (id: number, data: { are_licenses_allowed?: boolean }) => Promise<Agent>;
+  deleteAgent: (id: number) => Promise<void>;
+  replicateAgent: (id: number) => Promise<Agent>;
+  getAgentStats: (id: number) => Promise<AgentStats>;
 }
 
 export interface ConversationStore {
@@ -265,9 +346,10 @@ export interface ConversationStore {
   loading: boolean;
   error: string | null;
   fetchConversations: (projectId: number) => Promise<void>;
-  createConversation: (projectId: number, name: string) => Promise<void>;
+  createConversation: (projectId: number, name?: string) => Promise<void>;
   selectConversation: (conversation: Conversation) => void;
-  deleteConversation: (conversationId: string) => Promise<void>;
+  deleteConversation: (conversationId: string | number) => Promise<void>;
+  updateConversation: (conversationId: number, sessionId: string, data: { name: string }) => Promise<void>;
   ensureConversation: (projectId: number, firstMessage?: string) => Promise<Conversation>;
 }
 
@@ -303,6 +385,21 @@ export interface UserProfile {
   profile_photo_url: string;
   created_at: string; // date-time format
   updated_at: string; // date-time format
+}
+
+// Limits Types (CustomGPT.ai API)
+export interface UserLimits {
+  max_projects_num: number;
+  current_projects_num: number;
+  max_total_storage_credits: number;
+  current_total_storage_credits: number;
+  max_queries: number;
+  current_queries: number;
+}
+
+export interface LimitsResponse {
+  status: string;
+  data: UserLimits;
 }
 
 // CustomGPT.ai User Profile Store

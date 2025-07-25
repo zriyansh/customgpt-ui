@@ -68,12 +68,6 @@ const AgentItem: React.FC<AgentItemProps> = ({
             )}
           </div>
           
-          {agent.settings?.agent_capability && (
-            <p className="text-sm text-gray-500 truncate mt-0.5">
-              {agent.settings.agent_capability}
-            </p>
-          )}
-          
           {/* Metadata */}
           <div className="flex items-center gap-3 mt-1 text-xs text-gray-400">
             {agent.settings?.chatbot_model && (
@@ -249,11 +243,6 @@ export const AgentSelector: React.FC<AgentSelectorProps> = ({
               <h3 className="font-medium text-gray-900 truncate">
                 {currentAgent?.project_name || 'Select Agent'}
               </h3>
-              {currentAgent?.settings?.agent_capability && (
-                <p className="text-sm text-gray-500 truncate">
-                  {currentAgent.settings.agent_capability}
-                </p>
-              )}
             </div>
           </div>
           

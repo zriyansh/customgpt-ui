@@ -67,12 +67,12 @@ export const useConversationStore = create<ConversationStore>()(
         }
       },
 
-      createConversation: async (projectId: number, name: string) => {
+      createConversation: async (projectId: number, name?: string) => {
         set({ loading: true, error: null });
         
         try {
           const client = getClient();
-          const response = await client.createConversation(projectId, { name });
+          const response = await client.createConversation(projectId, name ? { name } : undefined);
           const newConversation = response.data;
           
           set(state => ({ 
@@ -94,9 +94,9 @@ export const useConversationStore = create<ConversationStore>()(
         set({ currentConversation: conversation });
       },
 
-      deleteConversation: async (conversationId: string) => {
+      deleteConversation: async (conversationId: string | number) => {
         const { conversations, currentConversation } = get();
-        const conversation = conversations.find(c => c.id === conversationId);
+        const conversation = conversations.find(c => c.id.toString() === conversationId.toString());
         
         if (!conversation) return;
 
@@ -104,13 +104,13 @@ export const useConversationStore = create<ConversationStore>()(
         
         try {
           const client = getClient();
-          await client.deleteConversation(conversation.project_id, conversationId);
+          await client.deleteConversation(conversation.project_id, conversation.session_id);
           
-          const updatedConversations = conversations.filter(c => c.id !== conversationId);
+          const updatedConversations = conversations.filter(c => c.id.toString() !== conversationId.toString());
           
           set({ 
             conversations: updatedConversations,
-            currentConversation: currentConversation?.id === conversationId 
+            currentConversation: currentConversation?.id.toString() === conversationId.toString() 
               ? (updatedConversations.length > 0 ? updatedConversations[0] : null)
               : currentConversation,
             loading: false,
@@ -119,6 +119,33 @@ export const useConversationStore = create<ConversationStore>()(
           console.error('Failed to delete conversation:', error);
           set({ 
             error: error instanceof Error ? error.message : 'Failed to delete conversation',
+            loading: false 
+          });
+          throw error;
+        }
+      },
+
+      updateConversation: async (conversationId: number, sessionId: string, data: { name: string }) => {
+        set({ loading: true, error: null });
+        
+        try {
+          const client = getClient();
+          const response = await client.updateConversation(conversationId, sessionId, data);
+          const updatedConversation = response.data;
+          
+          set(state => ({ 
+            conversations: state.conversations.map(c => 
+              c.id === conversationId ? updatedConversation : c
+            ),
+            currentConversation: state.currentConversation?.id === conversationId 
+              ? updatedConversation 
+              : state.currentConversation,
+            loading: false,
+          }));
+        } catch (error) {
+          console.error('Failed to update conversation:', error);
+          set({ 
+            error: error instanceof Error ? error.message : 'Failed to update conversation',
             loading: false 
           });
           throw error;

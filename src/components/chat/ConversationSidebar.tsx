@@ -77,7 +77,7 @@ const ConversationItem: React.FC<ConversationItemProps> = ({
 
   const handleSaveEdit = () => {
     if (editName.trim() && editName.trim() !== conversation.name) {
-      onRename(conversation.id, editName.trim());
+      onRename(conversation.id.toString(), editName.trim());
     }
     setIsEditing(false);
     setEditName(conversation.name);
@@ -97,7 +97,7 @@ const ConversationItem: React.FC<ConversationItemProps> = ({
   };
 
   const handleDelete = () => {
-    onDelete(conversation.id);
+    onDelete(conversation.id.toString());
     setShowMenu(false);
   };
 
@@ -220,7 +220,8 @@ export const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
     fetchConversations,
     createConversation,
     selectConversation,
-    deleteConversation
+    deleteConversation,
+    updateConversation
   } = useConversationStore();
   
   const { currentAgent } = useAgentStore();
@@ -299,7 +300,7 @@ export const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
         agentName: currentAgent?.project_name
       });
       
-      await loadMessages(conversation.id);
+      await loadMessages(conversation.id.toString());
       
       logger.info('UI', 'Messages loaded successfully for conversation', {
         conversationId: conversation.id
@@ -325,10 +326,17 @@ export const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
     }
   };
 
-  const handleRenameConversation = (conversationId: string, newName: string) => {
-    // Update conversation name locally (in a real app, this would be an API call)
-    console.log('Rename conversation:', conversationId, newName);
-    toast.success('Conversation renamed');
+  const handleRenameConversation = async (conversationId: string, newName: string) => {
+    const conversation = conversations.find(c => c.id.toString() === conversationId);
+    if (!conversation) return;
+    
+    try {
+      await updateConversation(conversation.project_id, conversation.session_id, { name: newName });
+      toast.success('Conversation renamed');
+    } catch (error) {
+      console.error('Failed to rename conversation:', error);
+      toast.error('Failed to rename conversation');
+    }
   };
 
   if (isCollapsed) {
@@ -518,7 +526,7 @@ export const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
                 conversation={conversation}
                 isSelected={currentConversation?.id === conversation.id}
                 onSelect={handleSelectConversation}
-                onDelete={handleDeleteConversation}
+                onDelete={(id) => handleDeleteConversation(id)}
                 onRename={handleRenameConversation}
               />
             ))}
