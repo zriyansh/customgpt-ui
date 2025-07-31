@@ -1,3 +1,39 @@
+/**
+ * Navigation Bar Component
+ * 
+ * Application-wide navigation header with responsive design.
+ * Provides consistent navigation across all pages.
+ * 
+ * Features:
+ * - Responsive navigation menu
+ * - Active state highlighting
+ * - Back button for sub-pages
+ * - Mobile-optimized layout
+ * - Sticky positioning
+ * - Brand logo and name
+ * 
+ * Navigation Structure:
+ * - Chat: Main chat interface (/)
+ * - Projects: Agent/project management (/projects)
+ * - Profile: User profile settings (/profile)
+ * - Settings: Application settings (/settings)
+ * 
+ * Responsive Behavior:
+ * - Desktop: Full navigation with labels
+ * - Tablet: Compact navigation
+ * - Mobile: Icon-only navigation
+ * 
+ * Customization for contributors:
+ * - Add new navigation items in navigationItems array
+ * - Customize active state styles
+ * - Add dropdown menus for sub-navigation
+ * - Implement user avatar/menu
+ * - Add notification indicators
+ * - Customize brand colors and logo
+ * - Add breadcrumb navigation
+ * - Implement search functionality
+ */
+
 'use client';
 
 import React from 'react';
@@ -11,23 +47,49 @@ import {
   BarChart3, 
   User, 
   ArrowLeft,
-  Home
+  Home,
+  Settings
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
+/**
+ * Props for Navbar component
+ * 
+ * @property showBackButton - Whether to show back button on sub-pages
+ */
 interface NavbarProps {
   showBackButton?: boolean;
 }
 
+/**
+ * Navigation Bar Component
+ * 
+ * Renders the main application navigation with responsive design.
+ * Highlights active navigation item based on current route.
+ */
 export const Navbar: React.FC<NavbarProps> = ({ showBackButton = true }) => {
   const pathname = usePathname();
 
+  /**
+   * Navigation items configuration
+   * 
+   * Add new navigation items here to extend the navbar.
+   * Each item needs href, label, and icon from lucide-react.
+   */
   const navigationItems = [
     { href: '/', label: 'Chat', icon: MessageSquare },
     { href: '/projects', label: 'Projects', icon: Bot },
     { href: '/profile', label: 'Profile', icon: User },
+    { href: '/settings', label: 'Settings', icon: Settings },
   ];
 
+  /**
+   * Check if navigation item is active
+   * 
+   * Special handling for root path (/) to prevent
+   * it from always being active. Other paths use
+   * prefix matching for sub-pages.
+   */
   const isActive = (href: string) => {
     if (href === '/') {
       return pathname === '/';

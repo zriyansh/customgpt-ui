@@ -19,7 +19,7 @@ export interface Source {
   updated_at: string;
   type: string;
   settings: SourceSettings;
-  pages: Page[];
+  pages?: Page[];
 }
 
 // Sources list response

@@ -1,3 +1,41 @@
+/**
+ * Citation Details Modal Component
+ * 
+ * Modal dialog that displays detailed information about a citation,
+ * including Open Graph data fetched from the cited source.
+ * 
+ * Features:
+ * - Open Graph data display (title, description, image)
+ * - Loading and error states
+ * - Responsive modal design
+ * - Image preview with error handling
+ * - Direct link to source
+ * - Citation metadata display
+ * - Smooth animations
+ * 
+ * API Integration:
+ * - Fetches citation details via getCitation API
+ * - Handles Open Graph data response
+ * - Graceful error handling
+ * - Automatic retry on prop changes
+ * 
+ * UI/UX:
+ * - Backdrop click to close
+ * - Escape key support (via close button)
+ * - Loading spinner during fetch
+ * - Error message display
+ * - Image fallback on load error
+ * 
+ * Customization for contributors:
+ * - Add citation caching
+ * - Implement citation sharing
+ * - Add citation bookmarking
+ * - Enhance image preview (zoom, gallery)
+ * - Add citation analytics tracking
+ * - Implement citation export
+ * - Add related citations
+ */
+
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -17,6 +55,15 @@ import { getClient } from '@/lib/api/client';
 import { logger } from '@/lib/logger';
 import { useAgentStore } from '@/store/agents';
 
+/**
+ * Open Graph data structure for citations
+ * 
+ * @property id - Citation ID
+ * @property url - Source URL
+ * @property title - Page title from Open Graph
+ * @property description - Page description
+ * @property image - Optional preview image URL
+ */
 interface CitationOpenGraphData {
   id: number;
   url: string;
@@ -25,6 +72,14 @@ interface CitationOpenGraphData {
   image?: string;
 }
 
+/**
+ * Props for CitationDetailsModal
+ * 
+ * @property isOpen - Whether modal is visible
+ * @property onClose - Callback to close modal
+ * @property citationId - ID of citation to display
+ * @property projectId - Optional project ID (uses current agent if not provided)
+ */
 interface CitationDetailsModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -32,6 +87,12 @@ interface CitationDetailsModalProps {
   projectId?: number;
 }
 
+/**
+ * Citation Details Modal Component
+ * 
+ * Displays rich preview of citation with Open Graph data.
+ * Fetches citation details from API when opened.
+ */
 export const CitationDetailsModal: React.FC<CitationDetailsModalProps> = ({
   isOpen,
   onClose,
@@ -46,12 +107,27 @@ export const CitationDetailsModal: React.FC<CitationDetailsModalProps> = ({
   const { currentAgent } = useAgentStore();
   const effectiveProjectId = projectId || currentAgent?.id;
 
+  /**
+   * Fetch citation details when modal opens
+   * 
+   * Triggers API call when modal becomes visible and required data is available
+   */
   useEffect(() => {
     if (isOpen && effectiveProjectId && citationId) {
       fetchCitationDetails();
     }
   }, [isOpen, effectiveProjectId, citationId]);
 
+  /**
+   * Fetch citation Open Graph data from API
+   * 
+   * Handles:
+   * - Parameter validation
+   * - API call with proper typing
+   * - Error handling with user-friendly messages
+   * - Loading state management
+   * - Logging for debugging
+   */
   const fetchCitationDetails = async () => {
     if (!effectiveProjectId || !citationId) {
       setError('Missing project or citation information');

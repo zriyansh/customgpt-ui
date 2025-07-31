@@ -1,3 +1,53 @@
+/**
+ * Projects Management Page
+ * 
+ * Comprehensive project/agent configuration interface for CustomGPT.
+ * Provides centralized access to all project settings and management.
+ * 
+ * Features:
+ * - Project list with search
+ * - Multi-tab settings interface
+ * - Real-time updates
+ * - Responsive layout design
+ * - Project selection persistence
+ * - Loading states
+ * - Empty states
+ * - Settings categorization
+ * 
+ * Settings Categories:
+ * - General: Basic info, prompts, instructions
+ * - Appearance: Branding, colors, UI customization
+ * - Behavior: AI model, personality, response settings
+ * - Data Sources: File uploads, website crawling
+ * - Content Pages: Indexed content management
+ * - Conversations: Chat history and sharing
+ * - Analytics: Traffic and usage reports
+ * - Security: Access control, anti-hallucination
+ * - Integrations: API, plugins, connections
+ * - Monetization: Licensing and premium features
+ * 
+ * Layout Structure:
+ * - Left sidebar: Project list
+ * - Center panel: Settings tabs
+ * - Right content: Active settings panel
+ * - Three-column responsive design
+ * 
+ * State Management:
+ * - Uses agentStore for project data
+ * - Local state for selection/tabs
+ * - Automatic first project selection
+ * 
+ * Customization for contributors:
+ * - Add new settings tabs
+ * - Implement project creation
+ * - Add bulk operations
+ * - Enhance search with filters
+ * - Add project templates
+ * - Implement project export/import
+ * - Add project cloning
+ * - Create project comparison view
+ */
+
 'use client';
 
 import React, { useEffect, useState } from 'react';
@@ -32,7 +82,7 @@ import { PageLayout } from '@/components/layout/PageLayout';
 import { cn, formatTimestamp } from '@/lib/utils';
 import type { Agent } from '@/types';
 
-// Project settings components
+// Project settings components - modular settings panels
 import { GeneralSettings } from '@/components/projects/GeneralSettings';
 import { AppearanceSettings } from '@/components/projects/AppearanceSettings';
 import { BehaviorSettings } from '@/components/projects/BehaviorSettings';
@@ -44,8 +94,16 @@ import { SecuritySettings } from '@/components/projects/SecuritySettings';
 import { IntegrationsSettings } from '@/components/projects/IntegrationsSettings';
 import { MonetizationSettings } from '@/components/projects/MonetizationSettings';
 
+/**
+ * Settings tab type definition
+ * Represents available configuration sections
+ */
 type SettingsTab = 'general' | 'appearance' | 'behavior' | 'sources' | 'pages' | 'conversations' | 'analytics' | 'security' | 'integrations' | 'monetization';
 
+/**
+ * Settings tabs configuration
+ * Defines all available project settings categories with metadata
+ */
 const settingsTabs = [
   { id: 'general' as SettingsTab, label: 'General', icon: Info, description: 'Basic project settings and prompts' },
   { id: 'appearance' as SettingsTab, label: 'Appearance', icon: Palette, description: 'Branding, colors, and UI customization' },
@@ -59,12 +117,25 @@ const settingsTabs = [
   { id: 'monetization' as SettingsTab, label: 'Monetization', icon: DollarSign, description: 'Licensing, selling, and premium features' },
 ];
 
+/**
+ * ProjectCard component props
+ */
 interface ProjectCardProps {
   project: Agent;
   isSelected: boolean;
   onClick: () => void;
 }
 
+/**
+ * ProjectCard Component
+ * 
+ * Displays individual project in the sidebar list.
+ * Shows project name, ID, status, and last update time.
+ * 
+ * @param project - Agent/project data
+ * @param isSelected - Whether this project is currently selected
+ * @param onClick - Selection handler
+ */
 const ProjectCard: React.FC<ProjectCardProps> = ({ project, isSelected, onClick }) => {
   return (
     <button
@@ -77,10 +148,12 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, isSelected, onClick 
       )}
     >
       <div className="flex items-start gap-3">
+        {/* Project icon */}
         <div className="w-10 h-10 rounded-lg bg-brand-500 flex items-center justify-center flex-shrink-0">
           <Bot className="w-5 h-5 text-white" />
         </div>
         
+        {/* Project details */}
         <div className="flex-1 min-w-0">
           <h3 className="font-semibold text-gray-900 truncate">
             {project.project_name}
@@ -93,6 +166,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, isSelected, onClick 
           </p>
         </div>
         
+        {/* Selection indicator */}
         {isSelected && (
           <ChevronRight className="w-4 h-4 text-brand-500 flex-shrink-0" />
         )}
@@ -101,12 +175,25 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, isSelected, onClick 
   );
 };
 
+/**
+ * SettingsTabButton component props
+ */
 interface SettingsTabProps {
   tab: typeof settingsTabs[0];
   isActive: boolean;
   onClick: () => void;
 }
 
+/**
+ * SettingsTabButton Component
+ * 
+ * Individual settings category button in the center panel.
+ * Shows icon, label, and description for each settings section.
+ * 
+ * @param tab - Tab configuration object
+ * @param isActive - Whether this tab is currently active
+ * @param onClick - Tab selection handler
+ */
 const SettingsTabButton: React.FC<SettingsTabProps> = ({ tab, isActive, onClick }) => {
   const Icon = tab.icon;
   
@@ -139,33 +226,66 @@ const SettingsTabButton: React.FC<SettingsTabProps> = ({ tab, isActive, onClick 
   );
 };
 
+/**
+ * Projects Page Component
+ * 
+ * Main project management interface with three-column layout:
+ * 1. Project list (left)
+ * 2. Settings tabs (center)
+ * 3. Active settings content (right)
+ */
 export default function ProjectsPage() {
+  // Store hooks and local state
   const { agents, loading, fetchAgents } = useAgentStore();
   const [selectedProject, setSelectedProject] = useState<Agent | null>(null);
   const [activeTab, setActiveTab] = useState<SettingsTab>('general');
   const [searchQuery, setSearchQuery] = useState('');
 
+  /**
+   * Load projects on mount
+   * Fetches all available agents/projects from the API
+   */
   useEffect(() => {
     fetchAgents();
   }, []);
 
-  // Set first project as selected when projects load
+  /**
+   * Auto-select first project
+   * Automatically selects the first project when the list loads
+   * to avoid empty state for users with existing projects
+   */
   useEffect(() => {
     if (agents.length > 0 && !selectedProject) {
       setSelectedProject(agents[0]);
     }
   }, [agents, selectedProject]);
 
-  // Filter projects based on search
+  /**
+   * Filter projects based on search
+   * Case-insensitive search by project name
+   */
   const filteredProjects = agents.filter(project =>
     project.project_name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  /**
+   * Manual refresh handler
+   * Allows users to refresh the project list
+   */
   const handleRefresh = () => {
     fetchAgents();
   };
 
+  /**
+   * Render settings content based on active tab
+   * 
+   * Dynamically renders the appropriate settings component
+   * based on the currently selected tab and project.
+   * 
+   * @returns Settings component or empty state
+   */
   const renderSettingsContent = () => {
+    // Show empty state if no project selected
     if (!selectedProject) {
       return (
         <div className="flex items-center justify-center h-96">
@@ -182,6 +302,7 @@ export default function ProjectsPage() {
       );
     }
 
+    // Render appropriate settings component based on active tab
     switch (activeTab) {
       case 'general':
         return <GeneralSettings project={selectedProject} />;
@@ -211,12 +332,13 @@ export default function ProjectsPage() {
   return (
     <PageLayout>
       <div className="h-[calc(100vh-4rem)] flex bg-gray-50">
-        {/* Sidebar */}
+        {/* Left Sidebar - Project List */}
         <div className="w-80 bg-white border-r border-gray-200 flex flex-col">
           {/* Sidebar Header */}
           <div className="p-6 border-b border-gray-200">
             <div className="flex items-center justify-between mb-4">
               <h1 className="text-xl font-bold text-gray-900">Projects</h1>
+              {/* Refresh button */}
               <Button
                 variant="outline"
                 size="sm"
@@ -227,7 +349,7 @@ export default function ProjectsPage() {
               </Button>
             </div>
             
-            {/* Search */}
+            {/* Search input */}
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
               <input
@@ -236,12 +358,14 @@ export default function ProjectsPage() {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
+                aria-label="Search projects"
               />
             </div>
           </div>
 
           {/* Projects List */}
           <div className="flex-1 overflow-y-auto p-4 space-y-3">
+            {/* Loading skeleton */}
             {loading && agents.length === 0 ? (
               <div className="space-y-3">
                 {[...Array(3)].map((_, i) => (
@@ -257,6 +381,7 @@ export default function ProjectsPage() {
                 ))}
               </div>
             ) : filteredProjects.length === 0 ? (
+              // Empty state
               <div className="text-center py-8">
                 <Bot className="w-10 h-10 text-gray-400 mx-auto mb-3" />
                 <p className="text-gray-600">
@@ -264,6 +389,7 @@ export default function ProjectsPage() {
                 </p>
               </div>
             ) : (
+              // Project cards
               filteredProjects.map((project) => (
                 <ProjectCard
                   key={project.id}
@@ -276,11 +402,12 @@ export default function ProjectsPage() {
           </div>
         </div>
 
-        {/* Main Content */}
+        {/* Center and Right Content */}
         <div className="flex-1 flex">
-          {/* Settings Tabs */}
+          {/* Center Panel - Settings Tabs */}
           {selectedProject && (
             <div className="w-64 bg-white border-r border-gray-200">
+              {/* Selected project header */}
               <div className="p-4 border-b border-gray-200">
                 <h2 className="font-semibold text-gray-900 truncate">
                   {selectedProject.project_name}
@@ -288,6 +415,7 @@ export default function ProjectsPage() {
                 <p className="text-sm text-gray-600">Project Settings</p>
               </div>
               
+              {/* Settings tabs list */}
               <div className="overflow-y-auto">
                 {settingsTabs.map((tab) => (
                   <SettingsTabButton
@@ -301,7 +429,7 @@ export default function ProjectsPage() {
             </div>
           )}
 
-          {/* Settings Content */}
+          {/* Right Panel - Settings Content */}
           <div className="flex-1 bg-white overflow-y-auto">
             {renderSettingsContent()}
           </div>

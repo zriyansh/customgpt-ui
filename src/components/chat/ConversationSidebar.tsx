@@ -1,3 +1,43 @@
+/**
+ * Conversation Sidebar Component
+ * 
+ * Manages the conversation list and provides quick navigation
+ * between different chat sessions. Includes conversation management
+ * features like create, rename, and delete.
+ * 
+ * Features:
+ * - Conversation list with search/filter
+ * - Create new conversation
+ * - Rename conversations inline
+ * - Delete conversations with confirmation
+ * - Agent management access
+ * - Data source management
+ * - Analytics dashboard access
+ * - Collapsible sidebar
+ * 
+ * State Management:
+ * - Conversations from conversationStore
+ * - Current conversation selection
+ * - Search/filter state (local)
+ * - Collapse state (passed from parent)
+ * 
+ * UI/UX Features:
+ * - Hover states and animations
+ * - Keyboard shortcuts (future enhancement)
+ * - Context menu for conversation actions
+ * - Auto-scroll to selected conversation
+ * - Responsive design for mobile
+ * 
+ * Customization for contributors:
+ * - Add conversation categories/folders
+ * - Implement bulk operations
+ * - Add export/import functionality
+ * - Customize sidebar width
+ * - Add conversation pinning
+ * - Implement conversation search
+ * - Add conversation templates
+ */
+
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
@@ -27,6 +67,15 @@ import { cn, formatTimestamp, generateConversationName } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { logger } from '@/lib/logger';
 
+/**
+ * Props for individual conversation item
+ * 
+ * @property conversation - Conversation data object
+ * @property isSelected - Whether this conversation is currently active
+ * @property onSelect - Callback when conversation is clicked
+ * @property onDelete - Callback for deleting conversation
+ * @property onRename - Callback for renaming conversation
+ */
 interface ConversationItemProps {
   conversation: Conversation;
   isSelected: boolean;
@@ -35,6 +84,12 @@ interface ConversationItemProps {
   onRename: (conversationId: string, newName: string) => void;
 }
 
+/**
+ * Individual Conversation Item Component
+ * 
+ * Renders a single conversation in the sidebar with actions.
+ * Features inline editing and context menu for management.
+ */
 const ConversationItem: React.FC<ConversationItemProps> = ({
   conversation,
   isSelected,

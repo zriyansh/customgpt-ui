@@ -1,3 +1,40 @@
+/**
+ * Chat Layout Component
+ * 
+ * Top-level layout component that orchestrates the chat interface.
+ * Handles different deployment modes and manages the conversation sidebar.
+ * 
+ * Deployment Modes:
+ * - standalone: Full chat with sidebar (default for main app)
+ * - widget: Embeddable chat without sidebar
+ * - floating: Popup-style chat without sidebar
+ * 
+ * Features:
+ * - Responsive sidebar with collapse/expand
+ * - Automatic message loading on conversation change
+ * - Mode-specific rendering logic
+ * - Clean separation of concerns
+ * 
+ * Architecture:
+ * - ChatLayout (this) - Layout orchestration
+ *   - ConversationSidebar - Conversation list and management
+ *   - ChatContainer - Main chat interface
+ *     - Message - Individual messages
+ *     - ChatInput - Message input area
+ * 
+ * State Management:
+ * - currentConversation from conversationStore
+ * - loadMessages from messageStore
+ * - Local state for sidebar collapse
+ * 
+ * Customization for contributors:
+ * - Add new deployment modes in the mode prop
+ * - Customize sidebar behavior and persistence
+ * - Add keyboard shortcuts for sidebar toggle
+ * - Implement mobile-responsive sidebar
+ * - Add sidebar position options (left/right)
+ */
+
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -6,6 +43,15 @@ import { useConversationStore, useMessageStore } from '@/store';
 import { ChatContainer } from './ChatContainer';
 import { ConversationSidebar } from './ConversationSidebar';
 
+/**
+ * Props for ChatLayout component
+ * 
+ * @property mode - Deployment mode: standalone (with sidebar), widget, or floating
+ * @property className - Additional CSS classes for styling
+ * @property onClose - Callback for closing chat (widget/floating modes)
+ * @property onAgentSettings - Callback for opening agent settings
+ * @property showSidebar - Whether to show sidebar (only applies to standalone mode)
+ */
 interface ChatLayoutProps {
   mode?: 'standalone' | 'widget' | 'floating';
   className?: string;
@@ -14,6 +60,13 @@ interface ChatLayoutProps {
   showSidebar?: boolean;
 }
 
+/**
+ * Chat Layout Component
+ * 
+ * Orchestrates the overall chat interface layout based on deployment mode.
+ * In standalone mode, includes a collapsible conversation sidebar.
+ * In widget/floating modes, renders only the chat container.
+ */
 export const ChatLayout: React.FC<ChatLayoutProps> = ({
   mode = 'standalone',
   className,
@@ -25,7 +78,13 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({
   const { currentConversation } = useConversationStore();
   const { loadMessages } = useMessageStore();
 
-  // Load messages when conversation changes
+  /**
+   * Load messages when conversation changes
+   * 
+   * Automatically fetches messages from the store when user
+   * switches between conversations. This ensures the chat
+   * always shows the correct message history.
+   */
   useEffect(() => {
     if (currentConversation) {
       loadMessages(currentConversation.id.toString());
@@ -33,8 +92,15 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({
   }, [currentConversation, loadMessages]);
 
   // Hide sidebar for widget and floating modes
+  // Only standalone mode shows the conversation sidebar
   const shouldShowSidebar = showSidebar && mode === 'standalone';
 
+  /**
+   * Toggle sidebar collapsed state
+   * 
+   * For contributors: Consider persisting this state to localStorage
+   * to remember user preference across sessions
+   */
   const handleToggleSidebar = () => {
     setSidebarCollapsed(!sidebarCollapsed);
   };

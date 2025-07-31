@@ -1,8 +1,49 @@
+/**
+ * Global CSS Styles
+ * 
+ * This file contains all global styles for the CustomGPT Chat UI.
+ * It uses Tailwind CSS as the foundation with custom additions.
+ * 
+ * Structure:
+ * 1. Font imports - Inter for UI, Fira Code for code blocks
+ * 2. Tailwind directives - Base, components, and utilities
+ * 3. CSS variables - Theme colors and customization
+ * 4. Base styles - Resets and defaults
+ * 5. Custom components - Scrollbars, animations, markdown
+ * 
+ * Customization Guide:
+ * - Colors: Modify CSS variables in :root
+ * - Dark mode: Add styles within .dark class
+ * - Fonts: Change the Google Fonts import
+ * - Animations: Add new keyframes at the bottom
+ * - Components: Use @apply directive for Tailwind classes
+ */
+
+/* Import fonts from Google Fonts */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Fira+Code:wght@300;400;500&display=swap');
+
+/* Tailwind CSS directives */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+/**
+ * CSS Variables (Light Theme)
+ * 
+ * These variables define the color scheme for the application.
+ * They can be easily customized to match your brand.
+ * 
+ * Usage in CSS: color: var(--foreground);
+ * Usage in Tailwind: extend theme in tailwind.config.js
+ * 
+ * Color meanings:
+ * - background: Main background color
+ * - foreground: Main text color
+ * - brand-primary: Primary brand color (buttons, links)
+ * - chat-user: Background for user messages
+ * - chat-assistant: Background for AI messages
+ * - chat-border: Border color for chat elements
+ */
 :root {
   --background: #ffffff;
   --foreground: #171717;
@@ -12,18 +53,46 @@
   --chat-border: #E2E8F0;
 }
 
+/**
+ * Dark Mode Variables
+ * 
+ * Dark theme is activated by adding .dark class to <html> element.
+ * Add more dark mode color overrides here as needed.
+ * 
+ * Example additions:
+ * --brand-primary: #3b82f6;
+ * --chat-user: #374151;
+ * --chat-assistant: #1f2937;
+ */
 /* Only apply dark mode when explicitly set with .dark class */
 .dark {
   --background: #0a0a0a;
   --foreground: #ededed;
 }
 
+/**
+ * CSS Reset
+ * 
+ * Ensures consistent styling across browsers.
+ * - box-sizing: border-box for predictable sizing
+ * - Remove default margins and padding
+ */
 * {
   box-sizing: border-box;
   padding: 0;
   margin: 0;
 }
 
+/**
+ * Base Document Styles
+ * 
+ * Sets up the foundation for the entire application:
+ * - Prevents horizontal scroll
+ * - Sets up font stack with Inter as primary
+ * - Enables font smoothing for better rendering
+ * 
+ * Font stack fallbacks ensure good typography on all systems
+ */
 html,
 body {
   max-width: 100vw;
@@ -38,6 +107,17 @@ body {
   color: var(--foreground);
 }
 
+/**
+ * Custom Scrollbar Styles
+ * 
+ * Creates thin, minimal scrollbars for better aesthetics.
+ * Only affects Webkit browsers (Chrome, Safari, Edge).
+ * 
+ * Customization:
+ * - width: Adjust scrollbar thickness
+ * - colors: Match your theme colors
+ * - border-radius: Adjust roundness
+ */
 /* Custom scrollbar styles */
 ::-webkit-scrollbar {
   width: 6px;
@@ -56,6 +136,16 @@ body {
   background: #a1a1a1;
 }
 
+/**
+ * Animation Classes
+ * 
+ * Custom animations for UI elements:
+ * - animate-blink: Used for cursor in streaming messages
+ * - animate-bounce-subtle: Used for loading indicators
+ * - delay-*: Animation delays for staggered effects
+ * 
+ * Add @keyframes definitions at the end of this file
+ */
 /* Animation classes */
 .animate-blink {
   animation: blink 1s infinite;
@@ -101,6 +191,21 @@ body {
   --tw-ring-color: rgb(10 117 255 / 0.5);
 }
 
+/**
+ * Markdown Content Styles
+ * 
+ * Styles for rendered markdown in chat messages.
+ * Provides consistent typography and spacing.
+ * 
+ * These styles ensure:
+ * - Readable line height
+ * - Proper heading hierarchy
+ * - Styled code blocks
+ * - Formatted tables
+ * - Clean link styling
+ * 
+ * To customize, adjust the specific element styles below
+ */
 /* Custom markdown styling */
 .markdown-content {
   max-width: none;
@@ -197,4 +302,66 @@ body {
 .markdown-content th {
   background-color: #f9fafb;
   font-weight: 600;
+}
+
+/**
+ * Keyframe Animations
+ * 
+ * Define custom animations used throughout the app.
+ * Add new @keyframes here for additional animations.
+ */
+
+/* Blinking cursor animation for streaming messages */
+@keyframes blink {
+  0%, 50% {
+    opacity: 1;
+  }
+  51%, 100% {
+    opacity: 0;
+  }
+}
+
+/* Subtle bounce animation for loading states */
+@keyframes bounceSubtle {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-4px);
+  }
+}
+
+/* Fade in animation */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Slide up animation */
+@keyframes slideUp {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* Pulse animation for highlights */
+@keyframes pulse {
+  0% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+  100% {
+    opacity: 1;
+  }
 }

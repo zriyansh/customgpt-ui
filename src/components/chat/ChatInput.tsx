@@ -1,3 +1,24 @@
+/**
+ * ChatInput Component
+ * 
+ * Rich input field for sending messages and uploading files.
+ * 
+ * Features:
+ * - Auto-expanding textarea (up to 200px height)
+ * - File upload with drag-and-drop support
+ * - File type and size validation
+ * - Progress tracking for uploads
+ * - Character count display
+ * - Keyboard shortcuts (Enter to send, Shift+Enter for newline)
+ * - Animated file chips and drag overlay
+ * 
+ * Customization:
+ * - Modify CONSTANTS in utils for file limits
+ * - Adjust max textarea height (line 144)
+ * - Customize accepted file types
+ * - Style the drag overlay and file chips
+ */
+
 'use client';
 
 import React, { useState, useRef, useCallback, KeyboardEvent, FormEvent } from 'react';
@@ -18,10 +39,22 @@ import { cn, formatFileSize, getFileIcon, isFileTypeAllowed, generateId, CONSTAN
 import { Button } from '@/components/ui/button';
 
 interface FileChipProps {
+  /** File upload object with metadata */
   file: FileUpload;
+  /** Handler to remove this file */
   onRemove: () => void;
 }
 
+/**
+ * FileChip Component
+ * 
+ * Displays an uploaded or uploading file with:
+ * - File icon based on type
+ * - Name and size
+ * - Upload progress bar
+ * - Remove button
+ * - Error state indication
+ */
 const FileChip: React.FC<FileChipProps> = ({ file, onRemove }) => {
   const fileIcon = getFileIcon(file.type);
   
@@ -79,10 +112,18 @@ const FileChip: React.FC<FileChipProps> = ({ file, onRemove }) => {
 };
 
 interface FileUploadButtonProps {
+  /** Handler called when files are selected */
   onUpload: (files: File[]) => void;
+  /** Whether the button is disabled */
   disabled?: boolean;
 }
 
+/**
+ * FileUploadButton Component
+ * 
+ * Hidden file input with visible button trigger.
+ * Accepts multiple files based on ACCEPTED_FILE_TYPES.
+ */
 const FileUploadButton: React.FC<FileUploadButtonProps> = ({ onUpload, disabled }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   
@@ -123,6 +164,29 @@ const FileUploadButton: React.FC<FileUploadButtonProps> = ({ onUpload, disabled 
   );
 };
 
+/**
+ * ChatInput Component - Main Export
+ * 
+ * Complete chat input with message composition and file upload.
+ * 
+ * Props:
+ * @param onSend - Handler called with message content and files
+ * @param disabled - Disables input during message sending
+ * @param placeholder - Placeholder text for the textarea
+ * @param maxLength - Maximum message length (default from CONSTANTS)
+ * @param className - Additional CSS classes
+ * 
+ * State Management:
+ * - input: Current message text
+ * - files: Array of uploaded/uploading files
+ * - isDragOver: Drag-and-drop state
+ * 
+ * @example
+ * <ChatInput 
+ *   onSend={(message, files) => handleSend(message, files)}
+ *   disabled={isLoading}
+ * />
+ */
 export const ChatInput: React.FC<InputProps> = ({ 
   onSend,
   disabled = false,
@@ -135,13 +199,16 @@ export const ChatInput: React.FC<InputProps> = ({
   const [isDragOver, setIsDragOver] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   
-  // Auto-resize textarea
+  /**
+   * Auto-resize textarea based on content
+   * Grows up to maxHeight (200px) then scrolls
+   */
   const adjustTextareaHeight = useCallback(() => {
     const textarea = textareaRef.current;
     if (textarea) {
       textarea.style.height = 'auto';
       const scrollHeight = textarea.scrollHeight;
-      const maxHeight = 200; // Max height in pixels
+      const maxHeight = 200; // Max height in pixels - customize as needed
       textarea.style.height = `${Math.min(scrollHeight, maxHeight)}px`;
     }
   }, []);
@@ -196,16 +263,20 @@ export const ChatInput: React.FC<InputProps> = ({
     }, 0);
   };
   
-  // Handle file uploads
+  /**
+   * Handle file uploads with validation
+   * Checks file size and type before accepting
+   * Shows toast notifications for validation errors
+   */
   const handleFileUpload = useCallback((newFiles: File[]) => {
     const validFiles = newFiles.filter(file => {
-      // Check file size
+      // Check file size against MAX_FILE_SIZE constant
       if (file.size > CONSTANTS.MAX_FILE_SIZE) {
         toast.error(`File "${file.name}" is too large. Maximum size is ${formatFileSize(CONSTANTS.MAX_FILE_SIZE)}`);
         return false;
       }
       
-      // Check file type
+      // Check file type against ACCEPTED_FILE_TYPES
       if (!isFileTypeAllowed(file.type, CONSTANTS.ACCEPTED_FILE_TYPES)) {
         toast.error(`File type "${file.type}" is not supported`);
         return false;
@@ -232,7 +303,11 @@ export const ChatInput: React.FC<InputProps> = ({
     
   }, []);
   
-  // Simulate file upload progress
+  /**
+   * Simulate file upload progress
+   * In production, replace with actual upload logic
+   * Updates progress in 100ms intervals
+   */
   const simulateUpload = (uploadFile: FileUpload) => {
     let progress = 0;
     const interval = setInterval(() => {
@@ -242,12 +317,14 @@ export const ChatInput: React.FC<InputProps> = ({
         progress = 100;
         clearInterval(interval);
         
+        // Mark file as uploaded
         setFiles(prev => prev.map(f => 
           f.id === uploadFile.id 
             ? { ...f, status: 'uploaded' as const, progress: 100 }
             : f
         ));
       } else {
+        // Update progress
         setFiles(prev => prev.map(f => 
           f.id === uploadFile.id 
             ? { ...f, progress: Math.round(progress) }
@@ -262,10 +339,16 @@ export const ChatInput: React.FC<InputProps> = ({
     setFiles(prev => prev.filter(f => f.id !== fileId));
   };
   
-  // Dropzone configuration
+  /**
+   * Dropzone configuration for drag-and-drop
+   * - Accepts files based on ACCEPTED_FILE_TYPES
+   * - Validates file size
+   * - Shows overlay on drag
+   * - Disabled click/keyboard to use custom button
+   */
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop: handleFileUpload,
-    noClick: true,
+    noClick: true, // Use custom button instead
     noKeyboard: true,
     accept: CONSTANTS.ACCEPTED_FILE_TYPES.reduce((acc, type) => {
       acc[type] = [];

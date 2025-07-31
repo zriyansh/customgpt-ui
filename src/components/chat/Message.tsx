@@ -1,3 +1,24 @@
+/**
+ * Message Component
+ * 
+ * Displays individual chat messages with rich formatting support.
+ * 
+ * Features:
+ * - Markdown rendering with GitHub Flavored Markdown
+ * - Syntax highlighting for code blocks
+ * - Copy functionality for code and messages
+ * - User feedback (thumbs up/down)
+ * - Citation display and interaction
+ * - Animated entrance and streaming cursor
+ * - Different layouts for user vs assistant messages
+ * 
+ * Customization:
+ * - Modify avatar styles in the component
+ * - Adjust markdown prose styles
+ * - Customize code block themes (currently using oneDark)
+ * - Change animation settings
+ */
+
 'use client';
 
 import React, { useState } from 'react';
@@ -23,10 +44,19 @@ import { Button } from '@/components/ui/button';
 import { CitationList } from './CitationList';
 
 interface CodeBlockProps {
+  /** Programming language for syntax highlighting */
   language: string;
+  /** Code content to display */
   value: string;
 }
 
+/**
+ * CodeBlock Component
+ * 
+ * Renders code with syntax highlighting and a copy button.
+ * Uses react-syntax-highlighter with the oneDark theme.
+ * Copy button appears on hover.
+ */
 const CodeBlock: React.FC<CodeBlockProps> = ({ language, value }) => {
   const [copied, setCopied] = useState(false);
   
@@ -66,15 +96,32 @@ const CodeBlock: React.FC<CodeBlockProps> = ({ language, value }) => {
   );
 };
 
+/**
+ * StreamingCursor Component
+ * 
+ * Animated blinking cursor shown at the end of streaming messages
+ * to indicate the AI is still generating content
+ */
 const StreamingCursor: React.FC = () => (
   <span className="inline-block w-0.5 h-4 bg-gray-900 animate-blink ml-0.5 align-middle" />
 );
 
 interface MessageContentProps {
+  /** Markdown content to render */
   content: string;
+  /** Whether the message is currently being streamed */
   isStreaming?: boolean;
 }
 
+/**
+ * MessageContent Component
+ * 
+ * Renders message content with full markdown support including:
+ * - Headers, lists, tables (via GFM)
+ * - Inline and block code with syntax highlighting
+ * - Links that open in new tabs
+ * - Streaming cursor when content is being generated
+ */
 const MessageContent: React.FC<MessageContentProps> = ({ content, isStreaming }) => {
   return (
     <div className="prose prose-sm max-w-none text-gray-900">
@@ -119,10 +166,22 @@ const MessageContent: React.FC<MessageContentProps> = ({ content, isStreaming })
 };
 
 interface MessageActionsProps {
+  /** The message object containing content and metadata */
   message: ChatMessage;
+  /** Handler for user feedback */
   onFeedback?: (feedback: 'like' | 'dislike') => void;
 }
 
+/**
+ * MessageActions Component
+ * 
+ * Action buttons for assistant messages:
+ * - Copy message content
+ * - Thumbs up/down feedback
+ * - Regenerate response (placeholder)
+ * 
+ * Only visible on hover for cleaner UI
+ */
 const MessageActions: React.FC<MessageActionsProps> = ({ message, onFeedback }) => {
   const [feedback, setFeedback] = useState<'like' | 'dislike' | null>(
     message.feedback || null
@@ -197,6 +256,29 @@ const MessageActions: React.FC<MessageActionsProps> = ({ message, onFeedback }) 
   );
 };
 
+/**
+ * Message Component - Main Export
+ * 
+ * Renders a complete message with avatar, content, citations, and actions.
+ * 
+ * Layout:
+ * - User messages: White background, user avatar, plain text
+ * - Assistant messages: Gray background, bot avatar, markdown content
+ * 
+ * Features:
+ * - Smooth entrance animation with Framer Motion
+ * - Hover effects for action visibility
+ * - Status indicators (sending, error)
+ * - Timestamp display
+ * - Citation list integration
+ * 
+ * @param message - The message data to display
+ * @param isStreaming - Whether this message is being streamed
+ * @param isLast - Whether this is the last message (affects scrolling)
+ * @param onCitationClick - Handler for citation interactions
+ * @param onFeedback - Handler for user feedback
+ * @param className - Additional CSS classes
+ */
 export const Message: React.FC<MessageProps> = ({ 
   message, 
   isStreaming = false, 

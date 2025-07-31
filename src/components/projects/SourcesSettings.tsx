@@ -290,10 +290,10 @@ export const SourcesSettings: React.FC<SourcesSettingsProps> = ({ project }) => 
     const searchLower = searchQuery.toLowerCase();
     const matchesSearch = source.type.toLowerCase().includes(searchLower) ||
                          (source.settings.sitemap_path || '').toLowerCase().includes(searchLower) ||
-                         source.pages.some(page => 
+                         (source.pages?.some(page => 
                            page.page_url.toLowerCase().includes(searchLower) ||
                            (page.filename || '').toLowerCase().includes(searchLower)
-                         );
+                         ) || false);
     
     return matchesSearch;
   });
@@ -321,7 +321,7 @@ export const SourcesSettings: React.FC<SourcesSettingsProps> = ({ project }) => 
       failed: 0,
     };
     
-    source.pages.forEach(page => {
+    source.pages?.forEach(page => {
       if (page.crawl_status === 'crawled') counts.crawled++;
       if (page.crawl_status === 'crawling') counts.crawling++;
       if (page.index_status === 'indexed') counts.indexed++;
@@ -447,7 +447,7 @@ export const SourcesSettings: React.FC<SourcesSettingsProps> = ({ project }) => 
             <div className="ml-4">
               <p className="text-sm font-medium text-gray-600">Total Pages</p>
               <p className="text-2xl font-bold text-gray-900">
-                {sources.reduce((total, source) => total + source.pages.length, 0)}
+                {sources.reduce((total, source) => total + (source.pages?.length || 0), 0)}
               </p>
             </div>
           </div>
@@ -572,7 +572,7 @@ export const SourcesSettings: React.FC<SourcesSettingsProps> = ({ project }) => 
                   {/* Pages Info */}
                   <div className="space-y-2">
                     <div className="text-sm font-medium text-gray-700">
-                      {source.pages.length} {source.pages.length === 1 ? 'page' : 'pages'}
+                      {source.pages?.length || 0} {source.pages?.length === 1 ? 'page' : 'pages'}
                     </div>
                     
                     {/* Status Counts */}

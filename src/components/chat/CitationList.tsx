@@ -1,3 +1,42 @@
+/**
+ * Citation List Component
+ * 
+ * Displays a list of source citations from the AI's response.
+ * Shows where the information came from with expandable details.
+ * 
+ * Features:
+ * - Expandable citation cards
+ * - Confidence score visualization
+ * - Direct source links
+ * - Show more/less functionality
+ * - Smooth expand/collapse animations
+ * - Citation numbering
+ * - View details modal integration
+ * 
+ * UI/UX:
+ * - Compact card design
+ * - Progressive disclosure pattern
+ * - Visual confidence indicators
+ * - Hover states for interactivity
+ * - Staggered animation on load
+ * 
+ * Citation Display:
+ * - Title and source URL
+ * - Content preview
+ * - Confidence percentage
+ * - External link to source
+ * - Details button for modal
+ * 
+ * Customization for contributors:
+ * - Add citation filtering
+ * - Implement citation search
+ * - Add export citations feature
+ * - Enhance confidence visualization
+ * - Add citation grouping by domain
+ * - Implement citation tooltips
+ * - Add citation copy functionality
+ */
+
 'use client';
 
 import React, { useState } from 'react';
@@ -12,6 +51,15 @@ import type { CitationProps, Citation } from '@/types';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 
+/**
+ * Props for individual citation card
+ * 
+ * @property citation - Citation data object
+ * @property index - Display index (1-based)
+ * @property isExpanded - Whether card is expanded
+ * @property onToggle - Toggle expansion callback
+ * @property onClick - Optional click handler for details
+ */
 interface CitationCardProps {
   citation: Citation;
   index: number;
@@ -20,6 +68,12 @@ interface CitationCardProps {
   onClick?: (citation: Citation) => void;
 }
 
+/**
+ * Citation Card Component
+ * 
+ * Individual citation with expandable details.
+ * Shows title, source, content, and confidence score.
+ */
 const CitationCard: React.FC<CitationCardProps> = ({
   citation,
   index,
@@ -121,18 +175,36 @@ const CitationCard: React.FC<CitationCardProps> = ({
   );
 };
 
+/**
+ * Citation List Component
+ * 
+ * Main component that renders a list of citations with progressive disclosure.
+ * Handles expansion state and show more/less functionality.
+ * 
+ * @param citations - Array of citation objects to display
+ * @param onCitationClick - Optional handler for citation detail clicks
+ * @param maxVisible - Maximum citations to show initially (default: 5)
+ * @param className - Additional CSS classes
+ */
 export const CitationList: React.FC<CitationProps> = ({ 
   citations, 
   onCitationClick,
   maxVisible = 5,
   className 
 }) => {
+  // Track which citations are expanded
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
+  // Track whether to show all citations or just maxVisible
   const [showAll, setShowAll] = useState(false);
   
   const visibleCitations = showAll ? citations : citations.slice(0, maxVisible);
   const hasMore = citations.length > maxVisible;
 
+  /**
+   * Toggle citation expansion state
+   * 
+   * Uses Set for efficient lookup and update of expanded citations
+   */
   const toggleExpanded = (citationId: string) => {
     const newExpanded = new Set(expanded);
     if (expanded.has(citationId)) {

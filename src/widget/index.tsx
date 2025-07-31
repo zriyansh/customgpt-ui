@@ -4,12 +4,13 @@ import { Toaster } from 'sonner';
 
 import '../../app/globals.css';
 import { WidgetConfig } from '../types';
-import { useConfigStore } from '../store';
+import { useConfigStore, useAgentStore } from '../store';
 import { ChatLayout } from '../components/chat/ChatLayout';
 
 // Widget configuration interface
 export interface CustomGPTWidgetConfig {
   apiKey: string;
+  agentId: number | string; // Required: Agent/Project ID
   containerId?: string;
   mode?: 'embedded' | 'floating' | 'widget';
   theme?: 'light' | 'dark';
@@ -31,6 +32,14 @@ class CustomGPTWidget {
   private isOpen: boolean = false;
 
   constructor(config: CustomGPTWidgetConfig) {
+    if (!config.apiKey) {
+      throw new Error('CustomGPT Widget: API key is required');
+    }
+    
+    if (!config.agentId) {
+      throw new Error('CustomGPT Widget: Agent ID is required');
+    }
+
     this.config = {
       mode: 'embedded',
       theme: 'light',
@@ -48,6 +57,14 @@ class CustomGPTWidget {
   private init() {
     // Set up the API key in the config store
     useConfigStore.getState().setApiKey(this.config.apiKey);
+    
+    // Set up the agent - create a minimal agent object with the provided ID
+    const agent: any = {
+      id: typeof this.config.agentId === 'string' ? parseInt(this.config.agentId) : this.config.agentId,
+      project_name: `Agent ${this.config.agentId}`,
+      is_chat_active: true,
+    };
+    useAgentStore.getState().selectAgent(agent);
 
     // Create container based on mode
     this.createContainer();

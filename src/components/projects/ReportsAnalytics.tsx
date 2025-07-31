@@ -36,7 +36,7 @@ interface ReportsData {
   };
   conversations: {
     total: number;
-    average_queries_per_conversation: number;
+    average_queries_per_conversation: number | string;
   };
   analysis: {
     queries: AnalysisDataPoint[];
@@ -240,7 +240,9 @@ export const ReportsAnalytics: React.FC<ReportsAnalyticsProps> = ({ project }) =
                     <div>
                       <p className="text-sm font-medium text-gray-600">Avg Queries/Conversation</p>
                       <p className="text-2xl font-bold text-gray-900">
-                        {data.conversations.average_queries_per_conversation.toFixed(2)}
+                        {typeof data.conversations.average_queries_per_conversation === 'number' 
+                          ? data.conversations.average_queries_per_conversation.toFixed(2)
+                          : Number(data.conversations.average_queries_per_conversation || 0).toFixed(2)}
                       </p>
                     </div>
                   </div>
@@ -358,8 +360,8 @@ export const ReportsAnalytics: React.FC<ReportsAnalyticsProps> = ({ project }) =
                 ) : (
                   <div className="h-48 flex items-end justify-between gap-1">
                     {data.analysis.queries.map((point, index) => {
-                      const maxQueries = Math.max(...data.analysis.queries.map(p => p.queries_number));
-                      const height = maxQueries > 0 ? (point.queries_number / maxQueries) * 100 : 0;
+                      const maxQueries = Math.max(...data.analysis.queries.map(p => Number(p.queries_number || 0)));
+                      const height = maxQueries > 0 ? (Number(point.queries_number || 0) / maxQueries) * 100 : 0;
                       
                       return (
                         <div key={index} className="flex-1 flex flex-col items-center">
@@ -390,8 +392,8 @@ export const ReportsAnalytics: React.FC<ReportsAnalyticsProps> = ({ project }) =
                 ) : (
                   <div className="h-48 flex items-end justify-between gap-1">
                     {data.analysis.conversations.map((point, index) => {
-                      const maxConversations = Math.max(...data.analysis.conversations.map(p => p.queries_number));
-                      const height = maxConversations > 0 ? (point.queries_number / maxConversations) * 100 : 0;
+                      const maxConversations = Math.max(...data.analysis.conversations.map(p => Number(p.queries_number || 0)));
+                      const height = maxConversations > 0 ? (Number(point.queries_number || 0) / maxConversations) * 100 : 0;
                       
                       return (
                         <div key={index} className="flex-1 flex flex-col items-center">
@@ -422,8 +424,8 @@ export const ReportsAnalytics: React.FC<ReportsAnalyticsProps> = ({ project }) =
                 ) : (
                   <div className="h-48 flex items-end justify-between gap-1">
                     {data.analysis.queries_per_conversation.map((point, index) => {
-                      const maxAvg = Math.max(...data.analysis.queries_per_conversation.map(p => p.queries_number));
-                      const height = maxAvg > 0 ? (point.queries_number / maxAvg) * 100 : 0;
+                      const maxAvg = Math.max(...data.analysis.queries_per_conversation.map(p => Number(p.queries_number || 0)));
+                      const height = maxAvg > 0 ? (Number(point.queries_number || 0) / maxAvg) * 100 : 0;
                       
                       return (
                         <div key={index} className="flex-1 flex flex-col items-center">
@@ -433,7 +435,7 @@ export const ReportsAnalytics: React.FC<ReportsAnalyticsProps> = ({ project }) =
                               style={{ height: `${height}%`, minHeight: '4px' }}
                             />
                             <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 translate-y-full opacity-0 group-hover:opacity-100 transition-opacity bg-gray-900 text-white text-xs rounded py-1 px-2 mt-1 whitespace-nowrap z-10">
-                              {point.queries_number.toFixed(2)} avg
+                              {Number(point.queries_number || 0).toFixed(2)} avg
                             </div>
                           </div>
                           <span className="text-xs text-gray-500 mt-2 rotate-45 origin-left">

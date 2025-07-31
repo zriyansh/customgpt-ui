@@ -28,6 +28,10 @@
       if (!config.apiKey) {
         throw new Error('CustomGPT: API key is required');
       }
+      
+      if (!config.agentId) {
+        throw new Error('CustomGPT: Agent ID is required');
+      }
 
       this.config = { ...DEFAULT_CONFIG, ...config };
       this.iframe = null;
@@ -80,6 +84,7 @@
       // Build iframe source URL with configuration
       const params = new URLSearchParams({
         apiKey: this.config.apiKey,
+        agentId: this.config.agentId.toString(),
         mode: this.config.mode,
         theme: this.config.theme,
         enableCitations: this.config.enableCitations,

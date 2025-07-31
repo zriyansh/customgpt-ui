@@ -1,3 +1,36 @@
+/**
+ * API Key Setup Component
+ * 
+ * Initial setup screen for configuring CustomGPT.ai API credentials.
+ * This is the first screen users see when starting the application.
+ * 
+ * Features:
+ * - API key validation (format: digits|alphanumeric)
+ * - Secure password input field
+ * - Live connection testing
+ * - Helpful onboarding instructions
+ * - Smooth animations and loading states
+ * 
+ * Flow:
+ * 1. User enters API key
+ * 2. Validates format locally
+ * 3. Tests connection by fetching agents
+ * 4. Stores key and proceeds to chat
+ * 
+ * Customization for contributors:
+ * - Modify validation rules in isValidApiKey utility
+ * - Add additional authentication methods (OAuth, etc.)
+ * - Customize onboarding instructions
+ * - Add API key requirements/restrictions
+ * - Implement multi-tenant authentication
+ * 
+ * Security notes:
+ * - API key is stored in localStorage via Zustand
+ * - Password input type prevents shoulder surfing
+ * - Key is validated before making API calls
+ * - Failed keys are immediately cleared
+ */
+
 'use client';
 
 import React, { useState } from 'react';
@@ -9,24 +42,57 @@ import { useConfigStore, useAgentStore } from '@/store';
 import { isValidApiKey } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 
+/**
+ * Props for ApiKeySetup component
+ * 
+ * @property onComplete - Callback fired when setup completes successfully
+ */
 interface ApiKeySetupProps {
   onComplete?: () => void;
 }
 
+/**
+ * API Key Setup Component
+ * 
+ * Handles the initial configuration of CustomGPT.ai API credentials.
+ * Provides a user-friendly onboarding experience with validation.
+ * 
+ * @param onComplete - Optional callback when setup succeeds
+ */
 export const ApiKeySetup: React.FC<ApiKeySetupProps> = ({ onComplete }) => {
   const [apiKey, setApiKey] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const { setApiKey: setConfigApiKey } = useConfigStore();
   const { fetchAgents } = useAgentStore();
 
+  /**
+   * Handle form submission
+   * 
+   * Validates API key format and tests connection by fetching agents.
+   * Shows appropriate error messages for different failure scenarios.
+   * 
+   * Error handling:
+   * - Empty input: Shows validation error
+   * - Invalid format: Shows format error with example
+   * - Network failure: Shows connection error
+   * - Invalid key: Clears key and shows error
+   * 
+   * Success flow:
+   * 1. Store key in config (initializes API client)
+   * 2. Fetch agents to verify connection
+   * 3. Show success toast
+   * 4. Call onComplete callback
+   */
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    // Validate input is not empty
     if (!apiKey.trim()) {
       toast.error('Please enter your API key');
       return;
     }
 
+    // Validate API key format (digits|alphanumeric)
     if (!isValidApiKey(apiKey)) {
       toast.error('Invalid API key format. Expected format: numbers|alphanumeric (e.g., 1234|abcd...)');
       return;
@@ -46,7 +112,7 @@ export const ApiKeySetup: React.FC<ApiKeySetupProps> = ({ onComplete }) => {
     } catch (error) {
       console.error('Failed to validate API key:', error);
       toast.error('Invalid API key or network error');
-      setConfigApiKey(''); // Clear invalid key
+      setConfigApiKey(''); // Clear invalid key to prevent usage
     } finally {
       setIsLoading(false);
     }
@@ -137,6 +203,10 @@ export const ApiKeySetup: React.FC<ApiKeySetupProps> = ({ onComplete }) => {
               Get your API key
               <ExternalLink className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
             </a>
+            
+            <p className="text-xs text-gray-500 mt-4">
+              You can change your API key anytime from the Settings page after setup.
+            </p>
           </div>
         </div>
       </motion.div>

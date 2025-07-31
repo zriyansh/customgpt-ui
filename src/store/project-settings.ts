@@ -65,6 +65,9 @@ export interface ProjectSettingsStore {
   reset: () => void;
 }
 
+// Track active requests to prevent duplicates
+const activeRequests = new Map<string, boolean>();
+
 export const useProjectSettingsStore = create<ProjectSettingsStore>((set, get) => ({
   // Initial state
   settings: null,
@@ -79,6 +82,16 @@ export const useProjectSettingsStore = create<ProjectSettingsStore>((set, get) =
 
   // Fetch project settings
   fetchSettings: async (projectId: number) => {
+    const requestKey = `settings-${projectId}`;
+    
+    // Prevent duplicate requests
+    if (activeRequests.get(requestKey)) {
+      return;
+    }
+    
+    activeRequests.set(requestKey, true);
+    
+    // Clear previous errors and set loading state
     set({ settingsLoading: true, settingsError: null });
 
     try {
@@ -89,7 +102,8 @@ export const useProjectSettingsStore = create<ProjectSettingsStore>((set, get) =
       if (response.status === 200) {
         set({ 
           settings: response.data, 
-          settingsLoading: false 
+          settingsLoading: false,
+          settingsError: null // Explicitly clear error on success
         });
       } else {
         throw new Error('Failed to fetch project settings');
@@ -100,7 +114,12 @@ export const useProjectSettingsStore = create<ProjectSettingsStore>((set, get) =
         settingsError: errorMessage, 
         settingsLoading: false 
       });
-      toast.error(errorMessage);
+      // Only show toast for actual errors, not for expected scenarios
+      if (error instanceof Error && !error.message.includes('404')) {
+        toast.error(errorMessage);
+      }
+    } finally {
+      activeRequests.delete(requestKey);
     }
   },
 

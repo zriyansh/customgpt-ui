@@ -1,3 +1,45 @@
+/**
+ * Dashboard Layout Component
+ * 
+ * Main layout wrapper for dashboard pages with sidebar navigation.
+ * Provides consistent structure for all dashboard views.
+ * 
+ * Features:
+ * - Collapsible sidebar navigation
+ * - Multi-level navigation menu
+ * - Badge support for notifications
+ * - User profile dropdown
+ * - Search functionality
+ * - Responsive design
+ * - Smooth animations
+ * - Active page highlighting
+ * 
+ * Navigation Structure:
+ * - Dashboard overview
+ * - Agent management
+ * - Conversation history
+ * - Analytics & reports
+ * - Page/document management
+ * - Data source configuration
+ * - User management
+ * - Settings
+ * 
+ * Layout Structure:
+ * - Fixed sidebar (collapsible)
+ * - Top header with search/profile
+ * - Main content area
+ * - Responsive mobile menu
+ * 
+ * Customization for contributors:
+ * - Add new navigation items
+ * - Implement breadcrumbs
+ * - Add footer section
+ * - Enhance search functionality
+ * - Add keyboard shortcuts
+ * - Implement dark mode toggle
+ * - Add notification center
+ */
+
 'use client';
 
 import React, { useState } from 'react';
@@ -24,11 +66,27 @@ import {
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 
+/**
+ * Props for DashboardLayout
+ * 
+ * @property children - Page content to render
+ * @property currentPage - Current active page ID for highlighting
+ */
 interface DashboardLayoutProps {
   children: React.ReactNode;
   currentPage?: string;
 }
 
+/**
+ * Navigation item structure
+ * 
+ * @property id - Unique identifier
+ * @property label - Display text
+ * @property icon - Lucide icon component
+ * @property href - Navigation URL
+ * @property badge - Optional notification count
+ * @property submenu - Optional nested items
+ */
 interface NavItem {
   id: string;
   label: string;
@@ -38,6 +96,10 @@ interface NavItem {
   submenu?: NavItem[];
 }
 
+/**
+ * Navigation menu configuration
+ * Defines the sidebar menu structure and hierarchy
+ */
 const navigation: NavItem[] = [
   {
     id: 'dashboard',

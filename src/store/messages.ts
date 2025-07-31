@@ -1,3 +1,34 @@
+/**
+ * Message Store - Core Chat Functionality
+ * 
+ * This store manages all message-related state and operations.
+ * It's the heart of the chat system, handling:
+ * - Message sending and receiving
+ * - Real-time streaming responses
+ * - Message history management
+ * - Local storage fallback
+ * - Error handling and retries
+ * 
+ * Architecture:
+ * - Uses Map for efficient conversation-based message storage
+ * - Integrates with agent and conversation stores
+ * - Handles both streaming and non-streaming API responses
+ * - Provides local storage backup for offline access
+ * 
+ * Key Features:
+ * - Automatic conversation creation if needed
+ * - Streaming with fallback to non-streaming
+ * - Optimistic UI updates
+ * - Message feedback tracking
+ * - File upload support
+ * 
+ * For contributors:
+ * - Always update both local state and storage
+ * - Handle API errors gracefully with fallbacks
+ * - Use logger for debugging
+ * - Maintain message order and IDs
+ */
+
 import { create } from 'zustand';
 import type { MessageStore, ChatMessage, Citation, FeedbackType } from '@/types';
 import { getClient } from '@/lib/api/client';
@@ -7,10 +38,18 @@ import { generateId } from '@/lib/utils';
 import { globalStreamManager } from '@/lib/streaming/handler';
 import { logger } from '@/lib/logger';
 
-// Local storage key for messages fallback
+/**
+ * Local storage configuration
+ * Provides offline access and caching for better UX
+ */
 const MESSAGES_STORAGE_KEY = 'customgpt-messages-cache';
 
-// Helper to save messages to local storage
+/**
+ * Save messages to local storage
+ * Provides a fallback when API is unavailable
+ * @param conversationId - The conversation to save messages for
+ * @param messages - Array of messages to save
+ */
 function saveMessagesToStorage(conversationId: string, messages: ChatMessage[]) {
   try {
     const stored = localStorage.getItem(MESSAGES_STORAGE_KEY);
@@ -18,11 +57,17 @@ function saveMessagesToStorage(conversationId: string, messages: ChatMessage[]) 
     cache[conversationId] = messages;
     localStorage.setItem(MESSAGES_STORAGE_KEY, JSON.stringify(cache));
   } catch (error) {
+    // Silent fail - storage is optional
     console.error('Failed to save messages to local storage:', error);
   }
 }
 
-// Helper to load messages from local storage
+/**
+ * Load messages from local storage
+ * Used as fallback when API is unavailable
+ * @param conversationId - The conversation to load messages for
+ * @returns Array of messages or null if not found
+ */
 function loadMessagesFromStorage(conversationId: string): ChatMessage[] | null {
   try {
     const stored = localStorage.getItem(MESSAGES_STORAGE_KEY);
@@ -30,18 +75,45 @@ function loadMessagesFromStorage(conversationId: string): ChatMessage[] | null {
     const cache = JSON.parse(stored);
     return cache[conversationId] || null;
   } catch (error) {
+    // Silent fail - storage is optional
     console.error('Failed to load messages from local storage:', error);
     return null;
   }
 }
 
+/**
+ * Message Store Implementation
+ * 
+ * State Structure:
+ * - messages: Map<conversationId, ChatMessage[]> - All messages grouped by conversation
+ * - streamingMessage: Current message being streamed (null when not streaming)
+ * - isStreaming: Whether a message is currently being streamed
+ * - loading: General loading state for message operations
+ * - error: Current error message if any
+ */
 export const useMessageStore = create<MessageStore>((set, get) => ({
+  // Initialize with empty state
   messages: new Map(),
   streamingMessage: null,
   isStreaming: false,
   loading: false,
   error: null,
 
+  /**
+   * Send a message to the current agent
+   * 
+   * Flow:
+   * 1. Validate agent selection
+   * 2. Ensure conversation exists (create if needed)
+   * 3. Create and add user message (optimistic update)
+   * 4. Upload files if present
+   * 5. Start streaming response
+   * 6. Fall back to non-streaming if streaming fails
+   * 7. Handle errors gracefully
+   * 
+   * @param content - Message text
+   * @param files - Optional file attachments
+   */
   sendMessage: async (content: string, files?: File[]) => {
     const agentStore = useAgentStore.getState();
     const conversationStore = useConversationStore.getState();
@@ -270,6 +342,18 @@ export const useMessageStore = create<MessageStore>((set, get) => ({
     }
   },
 
+  /**
+   * Add or update a message in the store
+   * 
+   * Features:
+   * - Handles both new messages and updates
+   * - Maintains message order
+   * - Automatically saves to local storage
+   * - Efficient update using message ID lookup
+   * 
+   * @param conversationId - The conversation to add the message to
+   * @param message - The message to add or update
+   */
   addMessage: (conversationId: string, message: ChatMessage) => {
     set(state => {
       const newMessages = new Map(state.messages);
@@ -278,8 +362,10 @@ export const useMessageStore = create<MessageStore>((set, get) => ({
       // Check if message already exists and update it
       const existingIndex = conversationMessages.findIndex(m => m.id === message.id);
       if (existingIndex >= 0) {
+        // Update existing message
         conversationMessages[existingIndex] = message;
       } else {
+        // Add new message
         conversationMessages.push(message);
       }
       
@@ -292,6 +378,15 @@ export const useMessageStore = create<MessageStore>((set, get) => ({
     });
   },
 
+  /**
+   * Update the currently streaming message
+   * 
+   * Used during streaming to append content chunks
+   * and update citations as they arrive
+   * 
+   * @param content - Content chunk to append
+   * @param citations - Updated citations (optional)
+   */
   updateStreamingMessage: (content: string, citations?: Citation[]) => {
     set(state => {
       if (!state.streamingMessage) return state;
@@ -299,8 +394,8 @@ export const useMessageStore = create<MessageStore>((set, get) => ({
       return {
         streamingMessage: {
           ...state.streamingMessage,
-          content: state.streamingMessage.content + content,
-          citations: citations || state.streamingMessage.citations,
+          content: state.streamingMessage.content + content, // Append content
+          citations: citations || state.streamingMessage.citations, // Update citations if provided
         },
       };
     });
@@ -365,7 +460,17 @@ export const useMessageStore = create<MessageStore>((set, get) => ({
     });
   },
 
-  // Load messages for a conversation
+  /**
+   * Load message history for a conversation
+   * 
+   * API Response Handling:
+   * - Supports multiple response formats from the API
+   * - Converts API format to internal ChatMessage format
+   * - Falls back to local storage if API fails
+   * - Handles both user_query and openai_response fields
+   * 
+   * @param conversationId - The conversation to load messages for
+   */
   loadMessages: async (conversationId: string) => {
     const agentStore = useAgentStore.getState();
     const conversationStore = useConversationStore.getState();

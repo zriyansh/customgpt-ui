@@ -1,13 +1,59 @@
+/**
+ * Typing Indicator Component
+ * 
+ * Shows animated typing indicator when AI is generating a response.
+ * Provides visual feedback that the system is processing.
+ * 
+ * Features:
+ * - Three-dot bouncing animation
+ * - AI avatar display
+ * - Staggered animation delays
+ * - Consistent styling with messages
+ * - Subtle bounce effect
+ * 
+ * Animation:
+ * - Uses CSS animations defined in globals.css
+ * - animate-bounce-subtle class for smooth motion
+ * - Staggered delays (0ms, 100ms, 200ms)
+ * - Creates wave-like effect
+ * 
+ * Design:
+ * - Matches message component layout
+ * - Gray background for distinction
+ * - Centered in chat container
+ * - Responsive max-width
+ * 
+ * Customization for contributors:
+ * - Add different animation styles
+ * - Implement custom messages ("Thinking...", "Searching...")
+ * - Add progress indicator for long operations
+ * - Customize avatar appearance
+ * - Add sound effects option
+ * - Implement skeleton loading alternative
+ * - Add estimated time remaining
+ */
+
 'use client';
 
 import React from 'react';
 import { Bot } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
+/**
+ * Props for TypingIndicator
+ * 
+ * @property className - Additional CSS classes for styling
+ */
 interface TypingIndicatorProps {
   className?: string;
 }
 
+/**
+ * Typing Indicator Component
+ * 
+ * Displays animated dots to indicate AI is typing/processing.
+ * Maintains visual consistency with message components.
+ */
 export const TypingIndicator: React.FC<TypingIndicatorProps> = ({ className }) => {
   return (
     <div className={cn(

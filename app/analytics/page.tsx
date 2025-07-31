@@ -1,3 +1,58 @@
+/**
+ * Analytics Dashboard Page
+ * 
+ * Comprehensive analytics view for CustomGPT agents showing usage metrics,
+ * performance data, and conversation insights.
+ * 
+ * Features:
+ * - Key performance metrics cards
+ * - Time-series charts for trends
+ * - Top queries analysis
+ * - User satisfaction metrics
+ * - Date range filtering
+ * - Data export functionality
+ * - Real-time refresh
+ * - Responsive grid layout
+ * 
+ * Data Visualization:
+ * - Total conversations with trend
+ * - Query success rate
+ * - Unique users count
+ * - Average response time
+ * - Conversations over time (line chart)
+ * - Queries over time (line chart)
+ * - Top queries (bar chart)
+ * - Satisfaction rate
+ * - Response accuracy
+ * - Average messages per conversation
+ * 
+ * Export Options:
+ * - JSON format for data processing
+ * - CSV format for spreadsheets
+ * - PDF format for reports
+ * 
+ * State Management:
+ * - Uses analyticsStore for data
+ * - Uses agentStore for current agent
+ * - Local state for export format
+ * 
+ * Error Handling:
+ * - No agent selected state
+ * - Loading skeletons
+ * - Error message display
+ * - Retry functionality
+ * 
+ * Customization for contributors:
+ * - Add more chart types (pie, donut, heatmap)
+ * - Implement real-time updates
+ * - Add custom metric cards
+ * - Enhance export formats
+ * - Add filtering by query type
+ * - Implement comparison mode
+ * - Add predictive analytics
+ * - Integrate with external analytics tools
+ */
+
 'use client';
 
 import React, { useEffect, useState } from 'react';
@@ -21,12 +76,18 @@ import { Card } from '@/components/ui/card';
 import { PageLayout } from '@/components/layout/PageLayout';
 import { cn } from '@/lib/utils';
 
-// We'll create these chart components next
+// Analytics visualization components
 import { LineChart } from '@/components/analytics/LineChart';
 import { BarChart } from '@/components/analytics/BarChart';
 import { MetricCard } from '@/components/analytics/MetricCard';
 import { DateRangePicker } from '@/components/analytics/DateRangePicker';
 
+/**
+ * Analytics Page Component
+ * 
+ * Main analytics dashboard showing comprehensive metrics and charts
+ * for the selected CustomGPT agent.
+ */
 export default function AnalyticsPage() {
   const router = useRouter();
   const { currentAgent } = useAgentStore();
@@ -42,18 +103,36 @@ export default function AnalyticsPage() {
 
   const [exportFormat, setExportFormat] = useState<'csv' | 'json' | 'pdf'>('json');
 
+  /**
+   * Fetch analytics when agent or date range changes
+   * 
+   * Automatically loads analytics data when component mounts
+   * or when the selected agent/date range changes.
+   */
   useEffect(() => {
     if (currentAgent) {
       fetchAnalytics(currentAgent.id);
     }
   }, [currentAgent, dateRange]);
 
+  /**
+   * Handle manual refresh
+   * 
+   * Allows users to manually refresh analytics data
+   * to get the latest metrics.
+   */
   const handleRefresh = () => {
     if (currentAgent) {
       fetchAnalytics(currentAgent.id);
     }
   };
 
+  /**
+   * Handle data export
+   * 
+   * Exports analytics data in the selected format
+   * (JSON, CSV, or PDF).
+   */
   const handleExport = () => {
     exportAnalytics(exportFormat);
   };

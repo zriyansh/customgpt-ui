@@ -1,3 +1,45 @@
+/**
+ * Agent Creation Form Component
+ * 
+ * Multi-step form for creating new CustomGPT agents.
+ * Allows users to configure agent details and data sources.
+ * 
+ * Features:
+ * - Multi-step wizard interface
+ * - Basic info configuration
+ * - Multiple data source types (sitemap, URLs, files)
+ * - File upload with drag-and-drop
+ * - Form validation
+ * - Progress indicators
+ * - Error handling
+ * - Review step before creation
+ * 
+ * Data Sources:
+ * - Sitemap URL for website crawling
+ * - Individual URLs to scrape
+ * - File uploads (PDF, TXT, etc.)
+ * - Multiple sources can be combined
+ * 
+ * Form Steps:
+ * 1. Basic Info - Name and description
+ * 2. Data Sources - Configure training data
+ * 3. Review & Create - Confirm and submit
+ * 
+ * State Management:
+ * - Local form state with validation
+ * - Integration with agentStore for creation
+ * - Loading states during API calls
+ * 
+ * Customization for contributors:
+ * - Add more data source types
+ * - Implement advanced agent settings
+ * - Add data source validation
+ * - Enhance file type support
+ * - Add bulk URL import
+ * - Implement agent templates
+ * - Add progress tracking for creation
+ */
+
 'use client';
 
 import React, { useState } from 'react';
@@ -21,11 +63,27 @@ import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { useAgentStore } from '@/store/agents';
 
+/**
+ * Props for AgentCreationForm
+ * 
+ * @property onAgentCreated - Callback when agent is successfully created
+ * @property onCancel - Optional callback for cancellation
+ */
 interface AgentCreationFormProps {
   onAgentCreated: (agent: any) => void;
   onCancel?: () => void;
 }
 
+/**
+ * Form data structure
+ * 
+ * @property project_name - Agent display name
+ * @property description - Agent description/purpose
+ * @property sitemap_path - Optional sitemap URL for crawling
+ * @property urls - Array of individual URLs to scrape
+ * @property files - Array of uploaded files
+ * @property is_shared - Whether agent is shared publicly
+ */
 interface FormData {
   project_name: string;
   description: string;
@@ -35,6 +93,9 @@ interface FormData {
   is_shared: boolean;
 }
 
+/**
+ * Initial empty form state
+ */
 const INITIAL_FORM_DATA: FormData = {
   project_name: '',
   description: '',
@@ -44,12 +105,22 @@ const INITIAL_FORM_DATA: FormData = {
   is_shared: false,
 };
 
+/**
+ * Form steps configuration
+ * Each step has an ID, label, and icon
+ */
 const SETUP_STEPS = [
   { id: 'basic', label: 'Basic Info', icon: Bot },
   { id: 'data', label: 'Data Sources', icon: Globe },
   { id: 'review', label: 'Review & Create', icon: CheckCircle },
 ];
 
+/**
+ * Agent Creation Form Component
+ * 
+ * Guides users through creating a new agent with
+ * a multi-step wizard interface.
+ */
 export const AgentCreationForm: React.FC<AgentCreationFormProps> = ({
   onAgentCreated,
   onCancel

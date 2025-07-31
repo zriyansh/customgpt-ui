@@ -1,3 +1,35 @@
+/**
+ * CustomGPT API Client
+ * 
+ * Central API client for all CustomGPT.ai backend communication.
+ * This client handles:
+ * - Authentication via API key
+ * - Request/response formatting
+ * - Error handling and retries
+ * - Streaming responses for real-time chat
+ * - File uploads for agent training
+ * 
+ * Architecture:
+ * - Uses native fetch API
+ * - Supports both REST and streaming endpoints
+ * - Implements exponential backoff for retries
+ * - Manages abort controllers for cancellation
+ * 
+ * Key Features:
+ * - Type-safe API methods
+ * - Automatic retry with backoff
+ * - Request timeout handling
+ * - Stream parsing for chat responses
+ * - Comprehensive error logging
+ * 
+ * For contributors:
+ * - All API methods should be type-safe
+ * - Handle both successful and error responses
+ * - Use logger for debugging
+ * - Support request cancellation
+ * - Document any API quirks or workarounds
+ */
+
 import type {
   Agent,
   AgentStats,
@@ -41,39 +73,83 @@ import type {
 import { parseStreamChunk, retryWithBackoff, delay } from '@/lib/utils';
 import { logger } from '@/lib/logger';
 
-// User Profile Response type
+/**
+ * User profile API response format
+ */
 interface UserProfileResponse {
   status: 'success' | 'error';
   data: UserProfile;
 }
 
+/**
+ * Configuration options for the API client
+ */
 export interface CustomGPTClientConfig {
+  /** CustomGPT.ai API key for authentication */
   apiKey: string;
+  /** Base URL for API calls (defaults to production) */
   baseURL?: string;
+  /** Request timeout in milliseconds (default: 30000) */
   timeout?: number;
+  /** Number of retry attempts for failed requests (default: 3) */
   retryAttempts?: number;
+  /** Delay between retries in milliseconds (default: 1000) */
   retryDelay?: number;
 }
 
+/**
+ * Extended fetch options with additional features
+ */
 export interface RequestOptions extends RequestInit {
+  /** Request timeout override */
   timeout?: number;
+  /** Retry attempts override */
   retryAttempts?: number;
+  /** Query parameters to append to URL */
   params?: Record<string, string | number | boolean>;
 }
 
+/**
+ * Options for handling streaming responses
+ */
 export interface StreamOptions {
+  /** Called for each chunk of streaming data */
   onChunk?: (chunk: StreamChunk) => void;
+  /** Called when streaming completes successfully */
   onComplete?: () => void;
+  /** Called if streaming encounters an error */
   onError?: (error: Error) => void;
+  /** Timeout for the stream */
   timeout?: number;
 }
 
+/**
+ * Main API client class
+ * 
+ * Usage:
+ * ```typescript
+ * const client = new CustomGPTAPIClient({
+ *   apiKey: 'your-api-key',
+ *   baseURL: 'https://app.customgpt.ai/api/v1'
+ * });
+ * 
+ * // Get agents
+ * const agents = await client.getAgents();
+ * 
+ * // Send message with streaming
+ * await client.sendMessageStream(agentId, sessionId, message, {
+ *   onChunk: (chunk) => console.log(chunk),
+ *   onComplete: () => console.log('Done')
+ * });
+ * ```
+ */
 export class CustomGPTAPIClient {
   private baseURL: string;
   private apiKey: string;
   private timeout: number;
   private retryAttempts: number;
   private retryDelay: number;
+  /** Map of request IDs to abort controllers for cancellation */
   private abortControllers: Map<string, AbortController> = new Map();
 
   constructor(config: CustomGPTClientConfig) {
@@ -83,6 +159,7 @@ export class CustomGPTAPIClient {
     this.retryAttempts = config.retryAttempts || 3;
     this.retryDelay = config.retryDelay || 1000;
     
+    // Log initialization for debugging
     logger.info('API_CLIENT', 'CustomGPT API Client initialized', {
       baseURL: this.baseURL,
       timeout: this.timeout,
@@ -93,6 +170,17 @@ export class CustomGPTAPIClient {
 
   /**
    * Generic request method with retry logic and error handling
+   * 
+   * Features:
+   * - Automatic retry with exponential backoff
+   * - Request timeout handling
+   * - Proper error messages for debugging
+   * - Request cancellation support
+   * 
+   * @param endpoint - API endpoint path (e.g., '/projects')
+   * @param options - Request options including method, body, etc.
+   * @returns Promise resolving to the API response
+   * @throws Error if request fails after all retries
    */
   private async request<T>(
     endpoint: string,

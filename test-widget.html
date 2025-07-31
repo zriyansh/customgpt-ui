@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test CustomGPT Widget</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            padding: 0;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .test-section {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1, h2 {
+            color: #333;
+        }
+        .widget-container {
+            margin: 20px 0;
+            border: 2px solid #007acc;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        .controls {
+            margin: 20px 0;
+        }
+        button {
+            background: #007acc;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 10px;
+        }
+        button:hover {
+            background: #005a9e;
+        }
+        .config-form {
+            background: #f8f8f8;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .config-form input {
+            width: 100%;
+            padding: 8px;
+            margin: 5px 0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .config-form label {
+            display: block;
+            margin-top: 10px;
+            font-weight: bold;
+        }
+        .info {
+            background: #e3f2fd;
+            border: 1px solid #1976d2;
+            border-radius: 4px;
+            padding: 15px;
+            margin: 15px 0;
+        }
+        .error {
+            background: #ffebee;
+            border: 1px solid #c62828;
+            color: #c62828;
+            border-radius: 4px;
+            padding: 15px;
+            margin: 15px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>CustomGPT Widget Test Page</h1>
+        
+        <div class="test-section">
+            <h2>Configuration</h2>
+            <div class="config-form">
+                <label for="apiKey">API Key:</label>
+                <input type="text" id="apiKey" placeholder="Enter your CustomGPT API key">
+                
+                <label for="agentId">Agent ID:</label>
+                <input type="text" id="agentId" placeholder="Enter your Agent/Project ID">
+                
+                <label for="widgetMode">Widget Mode:</label>
+                <select id="widgetMode">
+                    <option value="embedded">Embedded</option>
+                    <option value="floating">Floating</option>
+                </select>
+                
+                <button onclick="initializeWidget()">Initialize Widget</button>
+            </div>
+            
+            <div id="status-message"></div>
+        </div>
+        
+        <div class="test-section">
+            <h2>Embedded Widget Test</h2>
+            <div id="embedded-chat" class="widget-container" style="width: 100%; height: 600px;"></div>
+        </div>
+        
+        <div class="test-section">
+            <h2>Widget Controls</h2>
+            <div class="controls">
+                <button onclick="openWidget()">Open</button>
+                <button onclick="closeWidget()">Close</button>
+                <button onclick="toggleWidget()">Toggle</button>
+                <button onclick="toggleTheme()">Toggle Theme</button>
+                <button onclick="getWidgetStatus()">Get Status</button>
+                <button onclick="destroyWidget()">Destroy</button>
+            </div>
+            
+            <div id="control-output" style="margin-top: 20px;"></div>
+        </div>
+        
+        <div class="test-section">
+            <h2>Floating Widget Test</h2>
+            <button onclick="initializeFloatingWidget()">Initialize Floating Widget</button>
+            <div class="info">
+                The floating widget will appear as a chat button in the bottom-right corner.
+            </div>
+        </div>
+    </div>
+    
+    <!-- Include the widget script -->
+    <script src="dist/widget/customgpt-widget.js"></script>
+    
+    <script>
+        let embeddedWidget = null;
+        let floatingWidget = null;
+        
+        function showStatus(message, isError = false) {
+            const statusEl = document.getElementById('status-message');
+            statusEl.className = isError ? 'error' : 'info';
+            statusEl.textContent = message;
+        }
+        
+        function initializeWidget() {
+            const apiKey = document.getElementById('apiKey').value;
+            const agentId = document.getElementById('agentId').value;
+            const mode = document.getElementById('widgetMode').value;
+            
+            if (!apiKey || !agentId) {
+                showStatus('Please enter both API key and Agent ID', true);
+                return;
+            }
+            
+            try {
+                if (embeddedWidget) {
+                    embeddedWidget.destroy();
+                }
+                
+                embeddedWidget = CustomGPTWidget.init({
+                    apiKey: apiKey,
+                    agentId: parseInt(agentId) || agentId,
+                    containerId: 'embedded-chat',
+                    mode: mode === 'embedded' ? 'embedded' : 'widget',
+                    theme: 'light',
+                    enableCitations: true,
+                    enableFeedback: true,
+                    onOpen: () => {
+                        console.log('Widget opened');
+                        updateControlOutput('Widget opened');
+                    },
+                    onClose: () => {
+                        console.log('Widget closed');
+                        updateControlOutput('Widget closed');
+                    },
+                    onMessage: (message) => {
+                        console.log('Message:', message);
+                        updateControlOutput('Message event triggered');
+                    }
+                });
+                
+                showStatus('Widget initialized successfully!');
+            } catch (error) {
+                showStatus(`Error: ${error.message}`, true);
+                console.error(error);
+            }
+        }
+        
+        function initializeFloatingWidget() {
+            const apiKey = document.getElementById('apiKey').value;
+            const agentId = document.getElementById('agentId').value;
+            
+            if (!apiKey || !agentId) {
+                showStatus('Please enter both API key and Agent ID', true);
+                return;
+            }
+            
+            try {
+                if (floatingWidget) {
+                    floatingWidget.destroy();
+                }
+                
+                floatingWidget = CustomGPTWidget.init({
+                    apiKey: apiKey,
+                    agentId: parseInt(agentId) || agentId,
+                    mode: 'floating',
+                    position: 'bottom-right',
+                    theme: 'light',
+                    width: '400px',
+                    height: '600px'
+                });
+                
+                showStatus('Floating widget initialized! Look for the chat button in the bottom-right corner.');
+            } catch (error) {
+                showStatus(`Error: ${error.message}`, true);
+                console.error(error);
+            }
+        }
+        
+        function openWidget() {
+            if (embeddedWidget) {
+                embeddedWidget.open();
+                updateControlOutput('Open command sent');
+            } else {
+                updateControlOutput('No widget initialized', true);
+            }
+        }
+        
+        function closeWidget() {
+            if (embeddedWidget) {
+                embeddedWidget.close();
+                updateControlOutput('Close command sent');
+            } else {
+                updateControlOutput('No widget initialized', true);
+            }
+        }
+        
+        function toggleWidget() {
+            if (embeddedWidget) {
+                embeddedWidget.toggle();
+                updateControlOutput('Toggle command sent');
+            } else {
+                updateControlOutput('No widget initialized', true);
+            }
+        }
+        
+        function toggleTheme() {
+            if (embeddedWidget) {
+                const currentConfig = embeddedWidget.configuration;
+                const newTheme = currentConfig.theme === 'light' ? 'dark' : 'light';
+                embeddedWidget.updateConfig({ theme: newTheme });
+                updateControlOutput(`Theme changed to ${newTheme}`);
+            } else {
+                updateControlOutput('No widget initialized', true);
+            }
+        }
+        
+        function getWidgetStatus() {
+            if (embeddedWidget) {
+                const status = {
+                    isOpen: embeddedWidget.isOpened,
+                    config: embeddedWidget.configuration
+                };
+                updateControlOutput(`Status: ${JSON.stringify(status, null, 2)}`);
+            } else {
+                updateControlOutput('No widget initialized', true);
+            }
+        }
+        
+        function destroyWidget() {
+            if (embeddedWidget) {
+                embeddedWidget.destroy();
+                embeddedWidget = null;
+                updateControlOutput('Widget destroyed');
+            }
+            if (floatingWidget) {
+                floatingWidget.destroy();
+                floatingWidget = null;
+            }
+        }
+        
+        function updateControlOutput(message, isError = false) {
+            const output = document.getElementById('control-output');
+            const time = new Date().toLocaleTimeString();
+            output.innerHTML = `<div class="${isError ? 'error' : 'info'}">[${time}] ${message}</div>`;
+        }
+        
+        // Check if CustomGPTWidget is available
+        window.addEventListener('load', () => {
+            if (typeof CustomGPTWidget !== 'undefined') {
+                showStatus('CustomGPTWidget loaded successfully! Enter your credentials above to test.');
+            } else {
+                showStatus('CustomGPTWidget not found. Make sure to build the widget first with: npm run build:widget', true);
+            }
+        });
+    </script>
+</body>
+</html>

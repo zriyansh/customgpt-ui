@@ -33,8 +33,15 @@ export const GeneralSettings: React.FC<GeneralSettingsProps> = ({ project }) => 
   const [isModified, setIsModified] = useState(false);
 
   useEffect(() => {
+    // Clear any previous errors when project changes
+    useProjectSettingsStore.setState({ settingsError: null });
     fetchSettings(project.id);
-  }, [project.id]);
+    
+    // Cleanup function to clear errors when component unmounts
+    return () => {
+      useProjectSettingsStore.setState({ settingsError: null });
+    };
+  }, [project.id, fetchSettings]);
 
   useEffect(() => {
     if (settings) {
@@ -87,6 +94,8 @@ export const GeneralSettings: React.FC<GeneralSettingsProps> = ({ project }) => 
   };
 
   const handleRefresh = () => {
+    // Clear error state before refreshing
+    useProjectSettingsStore.setState({ settingsError: null });
     fetchSettings(project.id);
     setIsModified(false);
   };

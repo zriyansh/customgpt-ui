@@ -1,3 +1,41 @@
+/**
+ * Agent Selector Component
+ * 
+ * Dropdown selector for switching between different CustomGPT agents.
+ * Displays the current agent and allows users to select from available agents.
+ * 
+ * Features:
+ * - Current agent display with avatar
+ * - Dropdown list of all available agents
+ * - Agent metadata display (model, status)
+ * - Quick settings access per agent
+ * - Refresh agents functionality
+ * - Loading and error states
+ * - Click-outside-to-close behavior
+ * - Smooth animations
+ * 
+ * State Management:
+ * - Uses agentStore for agent data
+ * - Local state for dropdown open/close
+ * - Automatic agent fetching on dropdown open
+ * 
+ * UI/UX:
+ * - Visual selection indicator (checkmark)
+ * - Hover states for better interactivity
+ * - Loading skeleton for initial load
+ * - Error state with retry option
+ * - Empty state guidance
+ * 
+ * Customization for contributors:
+ * - Add agent search/filter functionality
+ * - Implement agent favorites/pinning
+ * - Add agent creation shortcut
+ * - Customize agent avatar display
+ * - Add agent status indicators
+ * - Implement agent grouping/categories
+ * - Add keyboard navigation support
+ */
+
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
@@ -17,12 +55,27 @@ import { useAgentStore } from '@/store';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 
+/**
+ * Props for AgentSelector component
+ * 
+ * @property className - Additional CSS classes
+ * @property showSettings - Whether to show settings button for each agent
+ * @property onSettingsClick - Callback when settings button is clicked
+ */
 interface AgentSelectorProps {
   className?: string;
   showSettings?: boolean;
   onSettingsClick?: (agent: Agent) => void;
 }
 
+/**
+ * Props for individual agent item in dropdown
+ * 
+ * @property agent - Agent data object
+ * @property isSelected - Whether this agent is currently selected
+ * @property onSelect - Callback when agent is selected
+ * @property onSettingsClick - Optional callback for settings button
+ */
 interface AgentItemProps {
   agent: Agent;
   isSelected: boolean;
@@ -30,6 +83,15 @@ interface AgentItemProps {
   onSettingsClick?: (agent: Agent) => void;
 }
 
+/**
+ * Individual Agent Item Component
+ * 
+ * Renders a single agent in the dropdown list with:
+ * - Agent avatar and name
+ * - Selection indicator
+ * - Metadata (model, status)
+ * - Settings button (optional)
+ */
 const AgentItem: React.FC<AgentItemProps> = ({ 
   agent, 
   isSelected, 
@@ -97,6 +159,16 @@ const AgentItem: React.FC<AgentItemProps> = ({
   );
 };
 
+/**
+ * Agent Selector Component
+ * 
+ * Main component that provides agent switching functionality.
+ * Manages dropdown state and handles agent selection.
+ * 
+ * @param className - Additional CSS classes for styling
+ * @param showSettings - Whether to show settings buttons (default: true)
+ * @param onSettingsClick - Handler for agent settings clicks
+ */
 export const AgentSelector: React.FC<AgentSelectorProps> = ({ 
   className,
   showSettings = true,
@@ -114,7 +186,11 @@ export const AgentSelector: React.FC<AgentSelectorProps> = ({
     selectAgent 
   } = useAgentStore();
 
-  // Close dropdown when clicking outside
+  /**
+   * Close dropdown when clicking outside
+   * 
+   * Uses mousedown event for better UX (closes before click completes)
+   */
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
@@ -128,6 +204,11 @@ export const AgentSelector: React.FC<AgentSelectorProps> = ({
     }
   }, [isOpen]);
 
+  /**
+   * Refresh agents list
+   * 
+   * Fetches latest agents from the API and shows toast feedback
+   */
   const handleRefresh = async () => {
     try {
       await fetchAgents();
@@ -137,12 +218,23 @@ export const AgentSelector: React.FC<AgentSelectorProps> = ({
     }
   };
 
+  /**
+   * Handle agent selection
+   * 
+   * Updates the current agent, closes dropdown, and shows confirmation
+   */
   const handleSelectAgent = (agent: Agent) => {
     selectAgent(agent);
     setIsOpen(false);
     toast.success(`Switched to ${agent.project_name}`);
   };
 
+  /**
+   * Toggle dropdown and fetch agents
+   * 
+   * When opening, automatically fetches latest agents.
+   * Errors are logged but not shown to avoid annoying toasts.
+   */
   const handleToggleDropdown = async () => {
     const willOpen = !isOpen;
     setIsOpen(willOpen);

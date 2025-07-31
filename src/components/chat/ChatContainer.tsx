@@ -1,3 +1,24 @@
+/**
+ * ChatContainer Component
+ * 
+ * Main chat interface component that manages the entire chat experience.
+ * This is the primary component for integrating CustomGPT chat functionality.
+ * 
+ * Features:
+ * - Message display with streaming support
+ * - Agent selection and switching
+ * - Citation handling with modal details
+ * - Multiple deployment modes (standalone, widget, floating)
+ * - Welcome screen with example prompts
+ * - Error handling and authorization checks
+ * 
+ * For customization:
+ * - Modify EXAMPLE_PROMPTS for different starter questions
+ * - Customize WelcomeMessage for branding
+ * - Adjust ChatHeader for different layouts
+ * - Style using Tailwind classes throughout
+ */
+
 'use client';
 
 import React, { useEffect, useRef } from 'react';
@@ -15,6 +36,10 @@ import { AgentSelector } from './AgentSelector';
 import { CitationDetailsModal } from './CitationDetailsModal';
 import { logger } from '@/lib/logger';
 
+/**
+ * Example prompts shown to users when starting a new conversation
+ * Customize these based on your agent's capabilities and use cases
+ */
 const EXAMPLE_PROMPTS = [
   "What can you help me with?",
   "Explain this document",
@@ -23,10 +48,18 @@ const EXAMPLE_PROMPTS = [
 ];
 
 interface ExamplePromptCardProps {
+  /** The prompt text to display */
   prompt: string;
+  /** Handler called when the prompt is clicked */
   onClick: (prompt: string) => void;
 }
 
+/**
+ * ExamplePromptCard Component
+ * 
+ * Clickable card showing an example prompt that users can select
+ * to quickly start a conversation
+ */
 const ExamplePromptCard: React.FC<ExamplePromptCardProps> = ({ prompt, onClick }) => {
   return (
     <button
@@ -39,9 +72,17 @@ const ExamplePromptCard: React.FC<ExamplePromptCardProps> = ({ prompt, onClick }
 };
 
 interface WelcomeMessageProps {
+  /** Handler called when an example prompt is clicked */
   onPromptClick: (prompt: string) => void;
 }
 
+/**
+ * WelcomeMessage Component
+ * 
+ * Displays a welcome screen when no messages exist in the conversation.
+ * Shows the agent name, welcome text, and example prompts.
+ * Uses Framer Motion for smooth animations.
+ */
 const WelcomeMessage: React.FC<WelcomeMessageProps> = ({ onPromptClick }) => {
   const { currentAgent } = useAgentStore();
   
@@ -88,9 +129,22 @@ const WelcomeMessage: React.FC<WelcomeMessageProps> = ({ onPromptClick }) => {
 };
 
 interface MessageAreaProps {
+  /** Additional CSS classes for styling */
   className?: string;
 }
 
+/**
+ * MessageArea Component
+ * 
+ * Scrollable area that displays all messages in the current conversation.
+ * Handles:
+ * - Message rendering with streaming support
+ * - Auto-scrolling to latest messages
+ * - Citation click handling
+ * - Error display
+ * - Welcome message when empty
+ * - Loading states with typing indicator
+ */
 const MessageArea: React.FC<MessageAreaProps> = ({ className }) => {
   const { 
     messages, 
@@ -103,7 +157,7 @@ const MessageArea: React.FC<MessageAreaProps> = ({ className }) => {
   const { currentAgent } = useAgentStore();
   const scrollRef = useRef<HTMLDivElement>(null);
   
-  // Citation modal state
+  // Citation modal state - tracks which citation is being viewed
   const [selectedCitationId, setSelectedCitationId] = React.useState<number | string | null>(null);
   const [citationModalOpen, setCitationModalOpen] = React.useState(false);
   
@@ -111,7 +165,11 @@ const MessageArea: React.FC<MessageAreaProps> = ({ className }) => {
     ? messages.get(currentConversation.id.toString()) || []
     : [];
   
-  // Auto-scroll to bottom when new messages arrive
+  /**
+   * Auto-scroll effect
+   * Automatically scrolls to the bottom when new messages arrive
+   * or when streaming messages are updated
+   */
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTo({
@@ -231,11 +289,23 @@ const MessageArea: React.FC<MessageAreaProps> = ({ className }) => {
 };
 
 interface ChatHeaderProps {
+  /** Deployment mode affects header layout */
   mode?: 'standalone' | 'widget' | 'floating';
+  /** Handler for close button (widget/floating modes) */
   onClose?: () => void;
+  /** Handler for agent settings button */
   onAgentSettings?: (agent: Agent) => void;
 }
 
+/**
+ * ChatHeader Component
+ * 
+ * Header bar for the chat interface. Layout changes based on deployment mode:
+ * - Standalone: Full header with agent selector
+ * - Widget/Floating: Compact header with close button
+ * 
+ * Shows agent status (online/offline) and provides agent switching
+ */
 const ChatHeader: React.FC<ChatHeaderProps> = ({ 
   mode = 'standalone', 
   onClose,
@@ -311,12 +381,44 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({
 };
 
 interface ChatContainerProps {
+  /** Deployment mode - affects layout and styling */
   mode?: 'standalone' | 'widget' | 'floating';
+  /** Additional CSS classes */
   className?: string;
+  /** Handler for close button (widget/floating modes) */
   onClose?: () => void;
+  /** Handler when agent settings are requested */
   onAgentSettings?: (agent: Agent) => void;
 }
 
+/**
+ * ChatContainer Component - Main Export
+ * 
+ * The primary chat interface component. Can be deployed in three modes:
+ * 
+ * 1. Standalone: Full-page chat interface
+ *    - Use when chat is the main feature
+ *    - No fixed dimensions, fills container
+ * 
+ * 2. Widget: Embedded chat widget
+ *    - Use for embedding in existing pages
+ *    - Fixed dimensions with shadow
+ * 
+ * 3. Floating: Floating chat bubble
+ *    - Use for overlay chat interfaces
+ *    - Fixed dimensions with stronger shadow
+ * 
+ * @example
+ * // Standalone mode
+ * <ChatContainer mode="standalone" />
+ * 
+ * @example
+ * // Widget mode with close handler
+ * <ChatContainer 
+ *   mode="widget" 
+ *   onClose={() => setShowChat(false)}
+ * />
+ */
 export const ChatContainer: React.FC<ChatContainerProps> = ({ 
   mode = 'standalone',
   className,
@@ -326,7 +428,11 @@ export const ChatContainer: React.FC<ChatContainerProps> = ({
   const { sendMessage, isStreaming, cancelStreaming } = useMessageStore();
   const { fetchAgents, agents, currentAgent } = useAgentStore();
 
-  // Initialize agents when component mounts
+  /**
+   * Agent initialization effect
+   * Fetches available agents when the component first mounts
+   * Only runs if agents haven't been loaded yet
+   */
   useEffect(() => {
     const initializeAgents = async () => {
       // Only fetch if we don't have agents and no current agent

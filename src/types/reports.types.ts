@@ -32,23 +32,23 @@ export interface ConversationsReportResponse {
   status: string;
   data: {
     total: number;
-    average_queries_per_conversation: number;
+    average_queries_per_conversation: number | string;
   };
 }
 
 // Analysis Report
 export interface AnalysisDataPoint {
-  queries_number: number;
+  queries_number: number | string;
   created_at_interval: string;
 }
 
 export interface ConversationDataPoint {
-  queries_number: number;
+  queries_number: number | string;
   created_at_interval: string;
 }
 
 export interface QueriesPerConversationDataPoint {
-  queries_number: number;
+  queries_number: number | string;
   created_at_interval: string;
 }
 

@@ -3,11 +3,12 @@ import { createRoot } from 'react-dom/client';
 import { Toaster } from 'sonner';
 
 import '../../app/globals.css';
-import { useConfigStore } from '../store';
+import { useConfigStore, useAgentStore } from '../store';
 import { ChatLayout } from '../components/chat/ChatLayout';
 
 interface IframeConfig {
   apiKey: string;
+  agentId: number | string;
   mode: 'embedded' | 'floating' | 'widget';
   theme: 'light' | 'dark';
   enableCitations: boolean;
@@ -21,8 +22,11 @@ const IframeApp: React.FC = () => {
   useEffect(() => {
     // Parse URL parameters
     const urlParams = new URLSearchParams(window.location.search);
+    const agentIdParam = urlParams.get('agentId');
+    
     const iframeConfig: IframeConfig = {
       apiKey: urlParams.get('apiKey') || '',
+      agentId: agentIdParam ? (isNaN(Number(agentIdParam)) ? agentIdParam : Number(agentIdParam)) : '',
       mode: (urlParams.get('mode') as any) || 'embedded',
       theme: (urlParams.get('theme') as any) || 'light',
       enableCitations: urlParams.get('enableCitations') !== 'false',
@@ -33,11 +37,24 @@ const IframeApp: React.FC = () => {
       console.error('CustomGPT: API key is required');
       return;
     }
+    
+    if (!iframeConfig.agentId) {
+      console.error('CustomGPT: Agent ID is required');
+      return;
+    }
 
     setConfig(iframeConfig);
 
     // Set up the API key in the config store
     useConfigStore.getState().setApiKey(iframeConfig.apiKey);
+    
+    // Set up the agent - create a minimal agent object with the provided ID
+    const agent: any = {
+      id: typeof iframeConfig.agentId === 'string' ? parseInt(iframeConfig.agentId) : iframeConfig.agentId,
+      project_name: `Agent ${iframeConfig.agentId}`,
+      is_chat_active: true,
+    };
+    useAgentStore.getState().selectAgent(agent);
 
     // Set up message handling with parent window
     setupMessageHandling();
