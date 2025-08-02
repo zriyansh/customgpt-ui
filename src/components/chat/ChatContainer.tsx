@@ -37,6 +37,7 @@ import { AgentSelector } from './AgentSelector';
 import { CitationDetailsModal } from './CitationDetailsModal';
 import { ConversationManager } from './ConversationManager';
 import { logger } from '@/lib/logger';
+import { useWidgetSafe } from '@/widget/WidgetContext';
 
 /**
  * Example prompts shown to users when starting a new conversation
@@ -480,6 +481,9 @@ export const ChatContainer: React.FC<ChatContainerProps> = ({
   const { fetchAgents, agents, currentAgent } = useAgentStore();
   const { currentConversation } = useConversationStore();
   
+  // Get widget instance from context
+  const widget = useWidgetSafe();
+  
   // Track current conversation for the widget
   const [currentConversationId, setCurrentConversationId] = React.useState<string | null>(null);
   
@@ -488,26 +492,20 @@ export const ChatContainer: React.FC<ChatContainerProps> = ({
     setCurrentConversationId(conversation.id);
     onConversationChange?.(conversation);
     // The widget will handle the actual conversation switch
-    if (typeof window !== 'undefined' && (window as any).CustomGPTWidget) {
-      const widget = (window as any).__customgpt_widget_instance;
-      if (widget) {
-        widget.switchConversation(conversation.id);
-      }
+    if (widget) {
+      widget.switchConversation(conversation.id);
     }
   };
   
   const handleCreateConversation = () => {
-    if (typeof window !== 'undefined' && (window as any).CustomGPTWidget) {
-      const widget = (window as any).__customgpt_widget_instance;
-      if (widget) {
-        const newConv = widget.createConversation();
-        if (newConv) {
-          setCurrentConversationId(newConv.id);
-        } else {
-          // Show user-friendly message when conversation limit is reached
-          const maxConversations = widget.configuration?.maxConversations || 5;
-          toast.error(`You've reached the maximum limit of ${maxConversations} conversations. Please delete an existing conversation to create a new one.`);
-        }
+    if (widget) {
+      const newConv = widget.createConversation();
+      if (newConv) {
+        setCurrentConversationId(newConv.id);
+      } else {
+        // Show user-friendly message when conversation limit is reached
+        const maxConversations = widget.configuration?.maxConversations || 5;
+        toast.error(`You've reached the maximum limit of ${maxConversations} conversations. Please delete an existing conversation to create a new one.`);
       }
     }
   };
