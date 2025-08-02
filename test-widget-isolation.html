@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Widget Isolation Test - CustomGPT</title>
+    
+    <!-- Include widget files -->
+    <script src="./dist/widget/vendors.js"></script>
+    <script src="./dist/widget/customgpt-widget.js"></script>
+    <link rel="stylesheet" href="./dist/widget/customgpt-widget.css">
+    
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .widget-container {
+            height: 500px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            background: white;
+        }
+        .info {
+            background: #e3f2fd;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        .debug {
+            background: #f5f5f5;
+            padding: 10px;
+            border-radius: 5px;
+            font-family: monospace;
+            font-size: 12px;
+            margin-top: 10px;
+        }
+        .status {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        .status.isolated { background: #c8e6c9; color: #2e7d32; }
+        .status.shared { background: #ffecb3; color: #f57c00; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>CustomGPT Widget Isolation Test</h1>
+        
+        <div class="info">
+            <h3>Testing Conversation Isolation</h3>
+            <p>This page demonstrates the conversation isolation feature:</p>
+            <ul>
+                <li>Each widget below has its own unique session ID</li>
+                <li>Conversations are stored separately in localStorage</li>
+                <li>Messages in one widget should NOT appear in the other</li>
+            </ul>
+        </div>
+
+        <h2>Widget 1: Embedded <span class="status isolated">ISOLATED</span></h2>
+        <div id="widget1" class="widget-container"></div>
+        <div id="debug1" class="debug"></div>
+
+        <h2>Widget 2: Floating Button <span class="status isolated">ISOLATED</span></h2>
+        <p>Click the floating button in the bottom-right corner</p>
+        <div id="debug2" class="debug"></div>
+
+        <hr style="margin: 40px 0;">
+
+        <h2>Test Shared Conversations</h2>
+        <button onclick="createSharedWidgets()">Create Shared Widgets</button>
+        <div id="shared-info" style="display: none; margin-top: 20px;">
+            <p>These widgets share the same session ID:</p>
+            <div id="widget3" class="widget-container"></div>
+            <div id="debug3" class="debug"></div>
+        </div>
+    </div>
+
+    <script>
+        // Debug function
+        function updateDebug() {
+            // Widget 1
+            if (window.widget1) {
+                const sessions1 = localStorage.getItem(`customgpt_conversations_${window.widget1.sessionId}`);
+                document.getElementById('debug1').innerHTML = `
+                    <strong>Widget 1 Debug:</strong><br>
+                    Session ID: ${window.widget1.sessionId}<br>
+                    Conversations: ${sessions1 ? JSON.parse(sessions1).length : 0}<br>
+                    Isolated: ${window.widget1.configuration.isolateConversations !== false}
+                `;
+            }
+
+            // Widget 2
+            if (window.widget2) {
+                const sessions2 = localStorage.getItem(`customgpt_conversations_${window.widget2.sessionId}`);
+                document.getElementById('debug2').innerHTML = `
+                    <strong>Widget 2 Debug:</strong><br>
+                    Session ID: ${window.widget2.sessionId}<br>
+                    Conversations: ${sessions2 ? JSON.parse(sessions2).length : 0}<br>
+                    Isolated: ${window.widget2.configuration.isolateConversations !== false}
+                `;
+            }
+
+            // Widget 3 (shared)
+            if (window.widget3) {
+                const sessions3 = localStorage.getItem(`customgpt_conversations_${window.widget3.sessionId}`);
+                document.getElementById('debug3').innerHTML = `
+                    <strong>Shared Widget Debug:</strong><br>
+                    Session ID: ${window.widget3.sessionId}<br>
+                    Conversations: ${sessions3 ? JSON.parse(sessions3).length : 0}<br>
+                    Isolated: ${window.widget3.configuration.isolateConversations !== false}
+                `;
+            }
+        }
+
+        // Initialize isolated widgets
+        window.widget1 = CustomGPTWidget.init({
+            apiKey: 'demo-api-key',
+            agentId: '123',
+            agentName: 'Widget 1 Assistant',
+            containerId: 'widget1',
+            mode: 'embedded',
+            enableConversationManagement: true,
+            maxConversations: 5,
+            // isolateConversations: true (default)
+            onMessage: () => updateDebug(),
+            onConversationChange: () => updateDebug()
+        });
+
+        window.widget2 = CustomGPTWidget.init({
+            apiKey: 'demo-api-key',
+            agentId: '123',
+            agentName: 'Widget 2 Assistant',
+            mode: 'floating',
+            position: 'bottom-right',
+            enableConversationManagement: true,
+            maxConversations: 5,
+            // isolateConversations: true (default)
+            onMessage: () => updateDebug(),
+            onConversationChange: () => updateDebug()
+        });
+
+        // Function to create shared widgets
+        function createSharedWidgets() {
+            const sharedSessionId = 'shared-session-' + Date.now();
+            
+            document.getElementById('shared-info').style.display = 'block';
+            
+            window.widget3 = CustomGPTWidget.init({
+                apiKey: 'demo-api-key',
+                agentId: '123',
+                agentName: 'Shared Widget',
+                containerId: 'widget3',
+                mode: 'embedded',
+                enableConversationManagement: true,
+                sessionId: sharedSessionId,
+                isolateConversations: false, // Important!
+                onMessage: () => updateDebug(),
+                onConversationChange: () => updateDebug()
+            });
+
+            updateDebug();
+        }
+
+        // Initial debug update
+        setTimeout(updateDebug, 1000);
+
+        // Log session IDs to console
+        setTimeout(() => {
+            console.log('Widget 1 Session:', window.widget1?.sessionId);
+            console.log('Widget 2 Session:', window.widget2?.sessionId);
+            console.log('Isolated?', window.widget1?.sessionId !== window.widget2?.sessionId);
+        }, 1000);
+    </script>
+</body>
+</html>

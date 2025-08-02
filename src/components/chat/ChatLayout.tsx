@@ -51,6 +51,12 @@ import { ConversationSidebar } from './ConversationSidebar';
  * @property onClose - Callback for closing chat (widget/floating modes)
  * @property onAgentSettings - Callback for opening agent settings
  * @property showSidebar - Whether to show sidebar (only applies to standalone mode)
+ * @property enableConversationManagement - Enable conversation switching UI
+ * @property maxConversations - Maximum conversations per session
+ * @property sessionId - Session ID for conversation isolation
+ * @property threadId - Specific conversation thread to load
+ * @property onConversationChange - Callback when conversation changes
+ * @property onMessage - Callback when message is sent/received
  */
 interface ChatLayoutProps {
   mode?: 'standalone' | 'widget' | 'floating';
@@ -58,6 +64,12 @@ interface ChatLayoutProps {
   onClose?: () => void;
   onAgentSettings?: (agent: Agent) => void;
   showSidebar?: boolean;
+  enableConversationManagement?: boolean;
+  maxConversations?: number;
+  sessionId?: string;
+  threadId?: string;
+  onConversationChange?: (conversation: any) => void;
+  onMessage?: (message: any) => void;
 }
 
 /**
@@ -72,7 +84,13 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({
   className,
   onClose,
   onAgentSettings,
-  showSidebar = true
+  showSidebar = true,
+  enableConversationManagement = false,
+  maxConversations,
+  sessionId,
+  threadId,
+  onConversationChange,
+  onMessage
 }) => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const { currentConversation } = useConversationStore();
@@ -86,7 +104,10 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({
    * always shows the correct message history.
    */
   useEffect(() => {
-    if (currentConversation) {
+    // Skip API calls in demo mode to prevent errors
+    const isDemoMode = typeof window !== 'undefined' && (window as any).__customgpt_demo_mode;
+    
+    if (currentConversation && !isDemoMode) {
       loadMessages(currentConversation.id.toString());
     }
   }, [currentConversation, loadMessages]);
@@ -113,6 +134,12 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({
         className={className}
         onClose={onClose}
         onAgentSettings={onAgentSettings}
+        enableConversationManagement={enableConversationManagement}
+        maxConversations={maxConversations}
+        sessionId={sessionId}
+        threadId={threadId}
+        onConversationChange={onConversationChange}
+        onMessage={onMessage}
       />
     );
   }
@@ -132,6 +159,12 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({
           className="h-full"
           onClose={onClose}
           onAgentSettings={onAgentSettings}
+          enableConversationManagement={enableConversationManagement}
+          maxConversations={maxConversations}
+          sessionId={sessionId}
+          threadId={threadId}
+          onConversationChange={onConversationChange}
+          onMessage={onMessage}
         />
       </div>
     </div>

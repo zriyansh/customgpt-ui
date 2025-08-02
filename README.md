@@ -1,457 +1,607 @@
-# CustomGPT.ai Chat UI
+# CustomGPT Chat UI
 
-A modern, responsive chat interface for CustomGPT.ai's RAG platform built with Next.js, TypeScript, and Tailwind CSS. Supports multiple deployment modes: standalone web app, embeddable widget, and floating chatbot.
+A modern, feature-rich chat interface for CustomGPT.ai with multiple deployment options including embedded widgets, floating buttons, and standalone applications.
 
-**📖 Comprehensive code documentation has been added throughout the codebase to help open source contributors understand, fork, and customize this project.**
+## Table of Contents
 
-## ✨ Features
+- [Features](#features)
+- [Quick Start](#quick-start)
+- [Installation](#installation)
+- [Widget Integration](#widget-integration)
+  - [Embedded Widget](#embedded-widget)
+  - [Floating Button](#floating-button)
+  - [React Integration](#react-integration)
+  - [Vue Integration](#vue-integration)
+- [Configuration Options](#configuration-options)
+- [API Reference](#api-reference)
+- [Deployment](#deployment)
+- [Development](#development)
+- [Examples](#examples)
+- [Troubleshooting](#troubleshooting)
 
-- **🎨 Claude-Inspired UI**: Clean, minimal interface with CustomGPT.ai branding
-- **📱 Multi-Format Deployment**: Standalone app, embeddable widget, or floating chatbot
-- **🔄 Real-Time Streaming**: Server-sent events for live message streaming
-- **📎 File Upload Support**: Drag-and-drop file uploads with 1400+ supported formats
-- **📚 Citation Management**: Interactive source references with expandable details
-- **🤖 Agent Management**: Dynamic agent switching and configuration
-- **💾 Persistent Storage**: Local storage for conversations and preferences
-- **🌓 Theme Support**: Light and dark mode compatibility
-- **📱 Responsive Design**: Optimized for desktop, tablet, and mobile
+## Features
 
-## 🚀 Quick Start
+- 🚀 **Multiple Deployment Modes**: Embedded widget, floating button, iframe, or standalone
+- 💬 **Conversation Management**: Session-based conversations with persistence
+- 🎨 **Customizable UI**: Themes, colors, positioning, and branding options
+- 🔄 **Real-time Streaming**: Live message streaming with typing indicators
+- 📎 **Rich Media Support**: File uploads, citations, and markdown rendering
+- 🌐 **Multi-language**: Internationalization support
+- 📱 **Responsive Design**: Works on desktop, tablet, and mobile
+- 🔒 **Secure**: API key authentication and session isolation
+- ⚡ **Performance**: Optimized bundle size and lazy loading
 
-### Prerequisites
+## Quick Start
 
-- Node.js 18+ and npm 8+
-- CustomGPT.ai API key ([Get yours here](https://app.customgpt.ai))
-- An Agent/Project ID from your CustomGPT.ai dashboard
+### CDN Integration (Easiest)
 
-### Installation
-
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/customgpt/customgpt-ui
-   cd customgpt-ui
-   ```
-
-2. **Install dependencies**
-   ```bash
-   npm install
-   ```
-
-3. **Start development server**
-   ```bash
-   npm run dev
-   ```
-
-4. **Open your browser**
-   Navigate to [http://localhost:3000](http://localhost:3000)
-
-5. **Enter your API key**
-   The app will prompt you to enter your CustomGPT.ai API key on first launch.
-
-### 🎯 Quick Widget Setup
-
-For the fastest setup of a chat widget on your website:
-
-1. **Get your credentials from CustomGPT.ai:**
-   - API Key: Found in your account settings
-   - Agent ID: Found in your agent/project details
-
-2. **Add to your website (choose one):**
-
-   **Option A - Direct Widget (Simplest):**
-   ```html
-   <div id="my-chat" style="width: 400px; height: 600px;"></div>
-   <script src="https://your-domain.com/widget/customgpt-widget.js"></script>
-   <script>
-     CustomGPTWidget.init({
-       apiKey: 'YOUR_API_KEY_HERE',
-       agentId: YOUR_AGENT_ID_HERE,
-       containerId: 'my-chat'
-     });
-   </script>
-   ```
-
-   **Option B - Floating Button (Iframe):**
-   ```html
-   <script src="https://your-domain.com/embed/customgpt-embed.js"></script>
-   <script>
-     CustomGPTEmbed.init({
-       apiKey: 'YOUR_API_KEY_HERE',
-       agentId: YOUR_AGENT_ID_HERE,
-       mode: 'floating',
-       position: 'bottom-right',
-       iframeSrc: 'https://your-domain.com/iframe/'
-     });
-   </script>
-   ```
-
-3. **That's it!** Your chat widget is now live on your website.
-
-## 📦 Deployment Options
-
-### 1. Standalone Web Application
-
-Deploy as a full-featured web application:
-
-```bash
-# Build for production
-npm run build
-
-# Start production server
-npm start
-```
-
-**Vercel Deployment:**
-```bash
-# Deploy to Vercel
-npm run build
-vercel --prod
-```
-
-**Docker Deployment:**
-```bash
-# Build Docker image
-docker build -t customgpt-ui .
-
-# Run container
-docker run -p 3000:3000 customgpt-ui
-```
-
-### 2. Embeddable Widget
-
-Build as a lightweight widget for website integration. The widget requires an API key and agent ID to connect to a specific chatbot.
-
-```bash
-# Build widget bundle
-npm run build:widget
-
-# Development mode with hot reload
-npm run dev:widget
-```
-
-**Integration Example:**
 ```html
-<!-- Embedded Widget in a Container -->
-<div id="customgpt-chat" style="width: 400px; height: 600px;"></div>
-<script src="https://cdn.customgpt.ai/widget/customgpt-widget.js"></script>
+<!-- Add to your HTML -->
+<script src="https://cdn.customgpt.ai/widget/latest/customgpt-widget.js"></script>
+<link rel="stylesheet" href="https://cdn.customgpt.ai/widget/latest/customgpt-widget.css">
+
+<!-- Initialize widget -->
+<div id="chat-widget"></div>
 <script>
   CustomGPTWidget.init({
-    apiKey: 'YOUR_API_KEY',      // Required: Your CustomGPT API key
-    agentId: 123,                // Required: Your agent/project ID
-    containerId: 'customgpt-chat',
-    mode: 'embedded',
-    theme: 'light',
-    enableCitations: true,
-    enableFeedback: true
+    apiKey: 'your-api-key',
+    agentId: '123',
+    containerId: 'chat-widget',
+    mode: 'embedded'
   });
 </script>
 ```
 
-**Widget Configuration Options:**
-- `apiKey` (required): Your CustomGPT.ai API key
-- `agentId` (required): The ID of your agent/chatbot
-- `containerId`: ID of the HTML element to embed the widget in
-- `mode`: 'embedded' | 'floating' | 'widget'
-- `theme`: 'light' | 'dark'
-- `position`: 'bottom-right' | 'bottom-left' | 'top-right' | 'top-left' (for floating mode)
-- `width`: Widget width (default: '400px')
-- `height`: Widget height (default: '600px')
-- `enableCitations`: Show/hide citation sources (default: true)
-- `enableFeedback`: Show/hide feedback buttons (default: true)
-- `onOpen`: Callback function when widget opens
-- `onClose`: Callback function when widget closes
-- `onMessage`: Callback function when messages are sent/received
-
-### 3. Floating Chatbot (Iframe Embed)
-
-Deploy as a floating chat button using iframe for better security isolation:
+### NPM Installation
 
 ```bash
-# Build iframe bundle
-npm run build:iframe
-
-# Development mode with hot reload
-npm run dev:iframe
+npm install @customgpt/chat-widget
+# or
+yarn add @customgpt/chat-widget
 ```
 
-**Integration Example:**
+## Installation
+
+### Local Development Setup
+
+1. Clone the repository:
+```bash
+git clone https://github.com/customgpt/customgpt-ui.git
+cd customgpt-ui
+```
+
+2. Install dependencies:
+```bash
+npm install
+# or
+pnpm install
+```
+
+3. Create environment file:
+```bash
+cp .env.example .env.local
+```
+
+4. Add your API credentials:
+```env
+NEXT_PUBLIC_API_BASE_URL=https://app.customgpt.ai/api/v1
+NEXT_PUBLIC_API_KEY=your-api-key-here
+```
+
+5. Start development server:
+```bash
+npm run dev
+```
+
+## Widget Integration
+
+### Embedded Widget
+
+The embedded widget integrates directly into your webpage:
+
+```javascript
+const widget = CustomGPTWidget.init({
+  apiKey: 'your-api-key',
+  agentId: '123',
+  agentName: 'Support Assistant',
+  containerId: 'chat-container',
+  mode: 'embedded',
+  width: '400px',
+  height: '600px',
+  enableConversationManagement: true,
+  maxConversations: 10
+});
+```
+
+HTML Setup:
 ```html
-<!-- Floating Chat Button -->
+<div id="chat-container"></div>
+```
+
+### Floating Button
+
+Add a floating chat button to any page:
+
+```javascript
+const floatingWidget = CustomGPTWidget.init({
+  apiKey: 'your-api-key',
+  agentId: '123',
+  agentName: 'Assistant',
+  mode: 'floating',
+  position: 'bottom-right',
+  enableConversationManagement: true,
+  onOpen: () => console.log('Chat opened'),
+  onClose: () => console.log('Chat closed')
+});
+```
+
+### React Integration
+
+#### Prerequisites - Loading the Widget Files
+
+Before using the React component, you **MUST** load the widget JavaScript files. There are three ways to do this:
+
+**Option 1: Load in your HTML (Recommended)**
+```html
+<!-- In your index.html before your React app -->
+<script src="/dist/widget/vendors.js"></script>
+<script src="/dist/widget/customgpt-widget.js"></script>
+<link rel="stylesheet" href="/dist/widget/customgpt-widget.css">
+```
+
+**Option 2: Use CDN**
+```html
+<script src="https://cdn.customgpt.ai/widget/latest/vendors.js"></script>
+<script src="https://cdn.customgpt.ai/widget/latest/customgpt-widget.js"></script>
+<link rel="stylesheet" href="https://cdn.customgpt.ai/widget/latest/customgpt-widget.css">
+```
+
+**Option 3: Auto-load in the component**
+Set `autoLoad={true}` and specify the paths (see example below).
+
+#### Using the Wrapper Component
+
+```jsx
+import SimplifiedCustomGPTWidget from './examples/SimplifiedWidget';
+
+function App() {
+  return (
+    <SimplifiedCustomGPTWidget
+      apiKey="your-api-key"
+      agentId="123"
+      agentName="Support Bot"
+      width="100%"
+      height="600px"
+      maxConversations={10}
+      enableConversationManagement={true}
+      // For auto-loading scripts (optional)
+      autoLoad={true}
+      vendorsPath="/dist/widget/vendors.js"
+      widgetPath="/dist/widget/customgpt-widget.js"
+      cssPath="/dist/widget/customgpt-widget.css"
+      onMessage={(message) => console.log('New message:', message)}
+      onConversationChange={(conv) => console.log('Changed to:', conv)}
+    />
+  );
+}
+```
+
+#### Direct API Usage
+
+```jsx
+import { useEffect, useRef } from 'react';
+
+function ChatWidget() {
+  const widgetRef = useRef(null);
+
+  useEffect(() => {
+    const widget = window.CustomGPTWidget.init({
+      apiKey: 'your-api-key',
+      agentId: '123',
+      containerId: 'my-chat',
+      mode: 'embedded',
+      enableConversationManagement: true
+    });
+
+    widgetRef.current = widget;
+
+    return () => widget.destroy();
+  }, []);
+
+  return <div id="my-chat" style={{ height: '600px' }} />;
+}
+```
+
+### Vue Integration
+
+```vue
+<template>
+  <div id="customgpt-chat" ref="chatContainer"></div>
+</template>
+
 <script>
-  (function() {
-    const script = document.createElement('script');
-    script.src = 'https://cdn.customgpt.ai/embed/customgpt-embed.js';
-    script.onload = function() {
-      const chatWidget = CustomGPTEmbed.init({
-        apiKey: 'YOUR_API_KEY',      // Required: Your CustomGPT API key
-        agentId: 123,                // Required: Your agent/project ID
-        mode: 'floating',
-        position: 'bottom-right',
-        theme: 'light',
-        iframeSrc: 'https://chat.customgpt.ai/iframe/' // Your iframe URL
-      });
-      
-      // Optional: Programmatic control
-      // chatWidget.open();
-      // chatWidget.close();
-      // chatWidget.toggle();
-    };
-    document.head.appendChild(script);
-  })();
+export default {
+  mounted() {
+    this.widget = window.CustomGPTWidget.init({
+      apiKey: 'your-api-key',
+      agentId: '123',
+      containerId: 'customgpt-chat',
+      mode: 'embedded',
+      enableConversationManagement: true
+    });
+  },
+  
+  beforeDestroy() {
+    if (this.widget) {
+      this.widget.destroy();
+    }
+  }
+}
 </script>
 ```
 
-**Iframe Benefits:**
-- **Security Isolation**: Chat runs in a sandboxed environment
-- **Cross-Domain Compatibility**: No CORS issues
-- **CSP Friendly**: Works with strict Content Security Policies
-- **Consistent Behavior**: Same experience across all browsers
+## Configuration Options
 
-**Programmatic Control:**
-Both widget and iframe implementations support programmatic control:
+### Required Options
+
+| Option | Type | Description |
+|--------|------|-------------|
+| `apiKey` | string | Your CustomGPT API key |
+| `agentId` | string \| number | Agent/Project ID from dashboard |
+
+### Display Options
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `mode` | string | 'embedded' | Widget mode: 'embedded', 'floating', 'widget' |
+| `agentName` | string | - | Custom name to display |
+| `containerId` | string | - | DOM element ID for embedded mode |
+| `theme` | string | 'light' | Color theme: 'light' or 'dark' |
+| `position` | string | 'bottom-right' | Floating position |
+| `width` | string | '400px' | Widget width |
+| `height` | string | '600px' | Widget height |
+
+### Feature Options
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `enableConversationManagement` | boolean | false | Enable conversation switching |
+| `maxConversations` | number | - | Maximum conversations per session |
+| `sessionId` | string | auto | Custom session identifier |
+| `threadId` | string | - | Specific conversation to load |
+| `enableCitations` | boolean | true | Show citation sources |
+| `enableFeedback` | boolean | true | Show feedback buttons |
+
+### Event Callbacks
+
+| Callback | Description |
+|----------|-------------|
+| `onOpen()` | Called when widget opens |
+| `onClose()` | Called when widget closes |
+| `onMessage(message)` | Called on new message |
+| `onConversationChange(conversation)` | Called on conversation switch |
+
+## API Reference
+
+### Widget Methods
+
+#### `init(config)`
+Initialize a new widget instance.
 
 ```javascript
-// Get widget instance
-const widget = CustomGPTWidget.init(config);
-// or
-const widget = CustomGPTEmbed.init(config);
-
-// Control methods
-widget.open();          // Open the chat
-widget.close();         // Close the chat
-widget.toggle();        // Toggle open/close
-widget.destroy();       // Remove widget completely
-widget.updateConfig({   // Update configuration
-  theme: 'dark'
+const widget = CustomGPTWidget.init({
+  apiKey: 'your-api-key',
+  agentId: '123'
 });
-
-// Properties
-widget.isOpened;        // Check if widget is open
-widget.configuration;   // Get current configuration
 ```
 
-**Finding Your Agent ID:**
-1. Log in to your CustomGPT.ai dashboard
-2. Navigate to your agents/projects list
-3. Click on the agent you want to use
-4. The agent ID is shown in the URL or agent details
+#### `open()`
+Open the widget (floating mode).
 
-**Security Notes:**
-- Keep your API key secure - for production, consider using a server-side proxy
-- The agent ID is safe to expose in client-side code
-- Use HTTPS for all production deployments
-- Configure appropriate CORS and CSP headers for iframe implementations
+```javascript
+widget.open();
+```
 
-## 🚀 Widget Deployment Guide
+#### `close()`
+Close the widget (floating mode).
 
-After building the widget files, you need to host them somewhere accessible. Here are your options:
+```javascript
+widget.close();
+```
+
+#### `toggle()`
+Toggle widget open/closed state.
+
+```javascript
+widget.toggle();
+```
+
+#### `destroy()`
+Remove widget and cleanup resources.
+
+```javascript
+widget.destroy();
+```
+
+### Conversation Management
+
+#### `getConversations()`
+Get all conversations for current session.
+
+```javascript
+const conversations = widget.getConversations();
+// Returns: [{ id, title, createdAt, messages }, ...]
+```
+
+#### `createConversation(title?)`
+Create a new conversation.
+
+```javascript
+const newConv = widget.createConversation('Support Chat');
+// Returns: { id, title, createdAt, messages: [] }
+```
+
+#### `switchConversation(conversationId)`
+Switch to a different conversation.
+
+```javascript
+widget.switchConversation('conv_123');
+```
+
+#### `updateConversationTitle(conversationId, newTitle)`
+Update conversation title.
+
+```javascript
+widget.updateConversationTitle('conv_123', 'Order #12345');
+```
+
+#### `deleteConversation(conversationId)`
+Delete a conversation.
+
+```javascript
+widget.deleteConversation('conv_123');
+```
+
+#### `refresh()`
+Force refresh the widget UI.
+
+```javascript
+widget.refresh();
+```
+
+## Deployment
+
+### Production Build
+
+#### Build All Components (Recommended)
+```bash
+npm run build:all
+```
+
+This command builds all three deployment formats:
+1. **Standalone App** (`.next/`) - Full Next.js application
+2. **Widget Bundle** (`dist/widget/`) - Embeddable chat widget
+3. **Iframe Bundle** (`dist/iframe/`) - Iframe-based integration
+
+Build time: ~30 seconds  
+Output: See `dist/BUILD_INFO.txt` for detailed file information
+
+#### Build Individual Components
+
+Build only the widget:
+```bash
+npm run build:widget
+```
+
+Build only the iframe app:
+```bash
+npm run build:iframe
+```
+
+Build only the standalone app:
+```bash
+npm run build:standalone
+# or
+npm run build
+```
+
+### When to Use Each Build
+
+| Build Type | Use Case | File Size | Best For |
+|------------|----------|-----------|----------|
+| **Widget** | Direct embedding in websites | ~1.34 MB | Most integrations, full API access |
+| **Iframe** | Isolated embedding | ~1.33 MB | Style isolation, cross-domain |
+| **Standalone** | Full application | ~2 MB | Self-hosting, custom features |
 
 ### Self-Hosting
 
-1. **Build the files:**
-   ```bash
-   npm run build:widget    # For direct widget
-   npm run build:iframe    # For iframe embed
-   ```
-
-2. **Upload to your server:**
-   - Widget files: `dist/widget/` → `https://your-domain.com/widget/`
-   - Iframe files: `dist/iframe/` → `https://your-domain.com/iframe/`
-   - Embed script: `src/widget/iframe-embed.js` → `https://your-domain.com/embed/`
-
-3. **Update your integration code** with your URLs
-
-### CDN Hosting Options
-
-**Free Options:**
-- **Vercel**: Deploy with `vercel` CLI (free tier)
-- **Netlify**: Drag & drop `dist` folder (free tier)
-- **GitHub Pages**: If repository is public
-- **jsDelivr**: Auto-serves from GitHub (public repos only)
-
-**Paid Options:**
-- **AWS S3 + CloudFront**
-- **Google Cloud Storage + CDN**
-- **Cloudflare Pages/R2**
-- **Azure Blob Storage + CDN**
-
-### Quick Deploy with Vercel
-
+1. Build the widget:
 ```bash
-# Install Vercel CLI
-npm i -g vercel
+npm run build:widget
+```
 
+2. Host the files from `dist/widget/`:
+   - `customgpt-widget.js`
+   - `customgpt-widget.css`
+   - `vendors.js`
+
+3. Update your integration to point to your hosted files:
+```html
+<script src="https://your-domain.com/widget/vendors.js"></script>
+<script src="https://your-domain.com/widget/customgpt-widget.js"></script>
+<link rel="stylesheet" href="https://your-domain.com/widget/customgpt-widget.css">
+```
+
+### Docker Deployment
+
+```dockerfile
+FROM node:18-alpine
+
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci --only=production
+
+COPY . .
+RUN npm run build
+
+EXPOSE 3000
+CMD ["npm", "start"]
+```
+
+Build and run:
+```bash
+docker build -t customgpt-widget .
+docker run -p 3000:3000 customgpt-widget
+```
+
+### Cloud Deployment
+
+#### Vercel (Recommended)
+```bash
+npm install -g vercel
+vercel
+```
+
+#### Netlify
+```bash
+npm install -g netlify-cli
+netlify deploy --prod
+```
+
+#### AWS S3 + CloudFront
+```bash
 # Build files
-npm run build:all
+npm run build:widget
 
-# Deploy
-cd dist
-vercel --prod
+# Upload to S3
+aws s3 sync dist/widget/ s3://your-bucket/ --acl public-read
 
-# Your files will be available at:
-# https://your-project.vercel.app/widget/customgpt-widget.js
-# https://your-project.vercel.app/iframe/
+# Invalidate CloudFront cache
+aws cloudfront create-invalidation --distribution-id YOUR_DIST_ID --paths "/*"
 ```
 
-### CORS Configuration
-
-If hosting on a different domain, configure CORS headers:
-
-```nginx
-# Nginx example
-location /widget/ {
-    add_header Access-Control-Allow-Origin *;
-    add_header Access-Control-Allow-Methods "GET, OPTIONS";
-}
-
-location /iframe/ {
-    add_header X-Frame-Options "";
-    add_header Content-Security-Policy "frame-ancestors *;";
-}
-```
-
-## 🛠️ Development
+## Development
 
 ### Project Structure
 
 ```
 customgpt-ui/
 ├── src/
-│   ├── components/          # React components
-│   │   ├── chat/           # Chat-specific components
-│   │   ├── setup/          # Setup and configuration
-│   │   └── ui/             # Reusable UI components
-│   ├── lib/                # Utility functions and API client
-│   │   ├── api/            # CustomGPT.ai API integration
-│   │   └── streaming/      # Real-time streaming handlers
-│   ├── store/              # Zustand state management
-│   ├── types/              # TypeScript type definitions
-│   └── styles/             # Global styles and themes
-├── app/                    # Next.js app directory
-└── public/                 # Static assets
+│   ├── widget/           # Widget source code
+│   │   ├── index.tsx     # Main widget class
+│   │   ├── floating-wrapper.tsx
+│   │   └── widget-styles.css
+│   ├── components/       # React components
+│   │   └── chat/
+│   │       ├── ChatContainer.tsx
+│   │       ├── ChatLayout.tsx
+│   │       └── ConversationManager.tsx
+│   ├── store/           # State management
+│   │   └── conversations.ts
+│   └── lib/             # Utilities
+├── examples/            # Integration examples
+├── dist/               # Build output
+└── public/             # Static assets
 ```
 
-### Available Scripts
+### Development Commands
 
 ```bash
-# Development
-npm run dev              # Start development server
-npm run build           # Build for production
-npm run start           # Start production server
+# Start development server
+npm run dev
 
-# Multi-format builds
-npm run build:standalone # Build standalone app
-npm run build:widget    # Build embeddable widget
-npm run build:embed     # Build floating chatbot
-npm run build:all       # Build all formats
+# Run widget dev server
+npm run dev:widget
 
-# Code quality
-npm run lint            # Run ESLint
-npm run type-check      # Run TypeScript compiler
-npm test               # Run tests
-npm run test:watch     # Run tests in watch mode
+# Run tests
+npm run test
+
+# Lint code
+npm run lint
+
+# Type check
+npm run type-check
 ```
 
-### Environment Variables
+### Creating Custom Builds
 
-Create a `.env.local` file:
+Modify `webpack.widget.js` for custom builds:
 
-```bash
-# Optional: Custom API base URL
-NEXT_PUBLIC_API_BASE_URL=https://app.customgpt.ai/api/v1
-
-# Optional: App configuration
-NEXT_PUBLIC_APP_NAME="CustomGPT Chat"
-NEXT_PUBLIC_ENABLE_ANALYTICS=false
+```javascript
+module.exports = {
+  entry: {
+    'custom-widget': './src/widget/index.tsx',
+  },
+  // ... custom configuration
+};
 ```
 
-## 🏗️ Architecture
+## Examples
 
-### Core Components
+Check the `examples/` directory for:
 
-- **ChatContainer**: Main chat interface orchestrator
-- **Message**: Individual message component with markdown support
-- **ChatInput**: Input field with file upload and drag-and-drop
-- **CitationList**: Interactive citation management
-- **StreamHandler**: Real-time message streaming
+- `vanilla-js-widget.html` - Pure JavaScript examples
+- `react-widget.jsx` - React integration patterns
+- `react-floating-button.jsx` - Floating button in React
+- `SimplifiedWidget.jsx` - Simplified wrapper component
+- `SimplifiedFloatingButton.jsx` - Simplified floating button
 
-### State Management
+### Basic Example
 
-Uses Zustand for efficient state management:
+```html
+<!DOCTYPE html>
+<html>
+<head>
+    <script src="path/to/customgpt-widget.js"></script>
+    <link rel="stylesheet" href="path/to/customgpt-widget.css">
+</head>
+<body>
+    <div id="chat"></div>
+    <script>
+        CustomGPTWidget.init({
+            apiKey: 'your-api-key',
+            agentId: '123',
+            containerId: 'chat',
+            mode: 'embedded'
+        });
+    </script>
+</body>
+</html>
+```
 
-- **ConfigStore**: API keys and app configuration
-- **AgentStore**: Agent selection and management
-- **ConversationStore**: Conversation history and creation
-- **MessageStore**: Message state and streaming
-- **UIStore**: UI preferences and theme
+## Troubleshooting
 
-### API Integration
+### Common Issues
 
-Comprehensive CustomGPT.ai API integration:
+#### Widget not loading
+- Check console for errors
+- Verify API key and agent ID
+- Ensure container element exists
+- Check network requests
 
-- **Streaming Support**: Real-time Server-Sent Events
-- **File Uploads**: Multi-format file processing
-- **Error Handling**: Robust error recovery and retry logic
-- **Caching**: Intelligent response caching with React Query
+#### Blank screen on floating button
+- Update to latest version
+- Clear browser cache
+- Check for CSS conflicts
 
-## 📚 Code Documentation
+#### Conversation persistence issues
+- Check localStorage availability
+- Verify session ID configuration
+- Check for quota errors
 
-The codebase includes extensive documentation to help contributors:
+### Debug Mode
 
-- **JSDoc Comments**: Every component, function, and module is documented
-- **Type Definitions**: Full TypeScript coverage with detailed interface documentation
-- **Usage Examples**: Code examples in comments showing how to use components
-- **Architecture Notes**: Explanations of design decisions and data flow
-- **Customization Guides**: Specific notes for common customization scenarios
+Enable debug logging:
+```javascript
+window.CUSTOMGPT_DEBUG = true;
+```
 
-Key documented areas:
-- `src/types/` - All TypeScript interfaces with property descriptions
-- `src/components/` - React components with props, features, and usage
-- `src/store/` - State management with data flow explanations
-- `src/lib/api/` - API client with method documentation
-- `src/lib/utils.ts` - Utility functions with examples
-- `app/globals.css` - CSS structure and customization guide
+### Support
 
-## 🤝 Contributing
+- Documentation: https://docs.customgpt.ai
+- Issues: https://github.com/customgpt/customgpt-ui/issues
+- Email: support@customgpt.ai
 
-We welcome contributions! The codebase is thoroughly documented to help you get started.
+## License
 
-### Getting Started
-
-1. **Read the Code**: Start by exploring the documented components and understanding the architecture
-2. **Check Issues**: Look for issues labeled "good first issue" or "help wanted"
-3. **Ask Questions**: Open a discussion if you need clarification
-
-### Development Workflow
-
-1. Fork the repository
-2. Create a feature branch: `git checkout -b feature/amazing-feature`
-3. Follow existing code patterns and conventions
-4. Add/update documentation for your changes
-5. Test thoroughly: `npm run lint && npm run type-check && npm test`
-6. Commit your changes: `git commit -m 'Add amazing feature'`
-7. Push to the branch: `git push origin feature/amazing-feature`
-8. Open a Pull Request with a clear description
-
-### Code Standards
-
-- **TypeScript**: Ensure full type coverage
-- **Components**: Use functional components with hooks
-- **Styling**: Follow Tailwind CSS conventions
-- **Documentation**: Add JSDoc comments for new code
-- **Testing**: Write tests for new features
-- **Accessibility**: Follow WCAG guidelines
-
-## 📝 License
-
-This project is licensed under the MIT License.
-
-## 🔗 Links
-
-- [CustomGPT.ai](https://customgpt.ai) - Main platform
-- [API Documentation](https://docs.customgpt.ai) - API reference
-- [Support](https://support.customgpt.ai) - Get help
-
----
-
-Built with ❤️ by the CustomGPT.ai team
+MIT License - see LICENSE file for details.

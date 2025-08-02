@@ -1,4 +1,5 @@
 const path = require('path');
+const webpack = require('webpack');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 const TerserPlugin = require('terser-webpack-plugin');
@@ -17,7 +18,7 @@ module.exports = (env, argv) => {
     
     output: {
       path: path.resolve(__dirname, 'dist/iframe'),
-      filename: isProduction ? '[name].[contenthash].js' : '[name].js',
+      filename: isProduction ? '[name].js' : '[name].js', // Removed hash for easier integration
       chunkFilename: isProduction ? '[name].[contenthash].chunk.js' : '[name].chunk.js',
       publicPath: '/',
       clean: true,
@@ -96,6 +97,19 @@ module.exports = (env, argv) => {
     },
 
     plugins: [
+      // Define process.env for browser environment
+      new webpack.DefinePlugin({
+        'process.env': {
+          NODE_ENV: JSON.stringify(isProduction ? 'production' : 'development'),
+          NEXT_PUBLIC_API_BASE_URL: JSON.stringify(process.env.NEXT_PUBLIC_API_BASE_URL || 'https://app.customgpt.ai/api/v1'),
+        },
+        'process': {
+          env: {
+            NODE_ENV: JSON.stringify(isProduction ? 'production' : 'development'),
+          },
+        },
+      }),
+      
       new HtmlWebpackPlugin({
         template: './src/widget/iframe.html',
         filename: 'index.html',
@@ -106,7 +120,7 @@ module.exports = (env, argv) => {
       ...(isProduction
         ? [
             new MiniCssExtractPlugin({
-              filename: '[name].[contenthash].css',
+              filename: '[name].css', // Removed hash for easier integration
               chunkFilename: '[name].[contenthash].chunk.css',
             }),
           ]

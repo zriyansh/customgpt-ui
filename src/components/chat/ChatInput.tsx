@@ -240,11 +240,7 @@ export const ChatInput: React.FC<InputProps> = ({
     // Convert FileUpload objects to File objects
     const fileObjects = files
       .filter(f => f.status === 'uploaded')
-      .map(f => {
-        // In a real implementation, you'd have the actual File objects
-        // For now, we'll create mock File objects
-        return new File([''], f.name, { type: f.type });
-      });
+      .map(f => f.file); // Use the actual File object
     
     onSend(input.trim(), fileObjects);
     
@@ -292,6 +288,7 @@ export const ChatInput: React.FC<InputProps> = ({
       type: file.type,
       status: 'uploading',
       progress: 0,
+      file: file, // Store the actual File object
     }));
     
     setFiles(prev => [...prev, ...uploadFiles]);

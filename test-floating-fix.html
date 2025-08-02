@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Floating Button Fix</title>
+    
+    <!-- Include the built widget -->
+    <script src="./dist/widget/vendors.js"></script>
+    <script src="./dist/widget/customgpt-widget.js"></script>
+    <link rel="stylesheet" href="./dist/widget/customgpt-widget.css">
+    
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 40px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+        .test-section {
+            margin: 30px 0;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 5px;
+        }
+        .test-steps {
+            margin: 20px 0;
+        }
+        .test-steps li {
+            margin: 10px 0;
+            padding-left: 20px;
+        }
+        .status {
+            padding: 10px 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+            font-weight: 500;
+        }
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        button {
+            background: #007acc;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 5px;
+        }
+        button:hover {
+            background: #005a9e;
+        }
+        #log {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 14px;
+            max-height: 300px;
+            overflow-y: auto;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Floating Button Blank Screen Fix Test</h1>
+        <p>This page tests the fix for the floating button showing a blank screen when closed and reopened.</p>
+        
+        <div class="test-section">
+            <h2>Test Instructions:</h2>
+            <ol class="test-steps">
+                <li>Click "Initialize Floating Widget" to create the widget</li>
+                <li>Click the floating button in the bottom-right corner to open the chat</li>
+                <li>Type a message and verify the chat works</li>
+                <li>Click the X button to close the chat</li>
+                <li>Click the floating button again to reopen</li>
+                <li>✅ The chat should display properly (not blank)</li>
+                <li>Repeat steps 4-6 multiple times to ensure consistency</li>
+            </ol>
+        </div>
+
+        <div class="test-section">
+            <h2>Controls:</h2>
+            <button onclick="initializeWidget()">Initialize Floating Widget</button>
+            <button onclick="destroyWidget()">Destroy Widget</button>
+            <button onclick="toggleWidget()">Toggle Widget</button>
+            <button onclick="getWidgetState()">Get Widget State</button>
+            <button onclick="clearLog()">Clear Log</button>
+        </div>
+
+        <div id="status"></div>
+        
+        <div id="log"></div>
+    </div>
+
+    <script>
+        let widget = null;
+        const log = [];
+        
+        function addLog(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const entry = `[${timestamp}] ${type.toUpperCase()}: ${message}`;
+            log.push(entry);
+            updateLogDisplay();
+        }
+        
+        function updateLogDisplay() {
+            const logEl = document.getElementById('log');
+            logEl.innerHTML = log.join('<br>');
+            logEl.scrollTop = logEl.scrollHeight;
+        }
+        
+        function clearLog() {
+            log.length = 0;
+            updateLogDisplay();
+        }
+        
+        function showStatus(message, isError = false) {
+            const statusEl = document.getElementById('status');
+            statusEl.className = `status ${isError ? 'error' : 'success'}`;
+            statusEl.textContent = message;
+        }
+        
+        function initializeWidget() {
+            try {
+                if (widget) {
+                    addLog('Widget already exists, destroying first', 'warn');
+                    widget.destroy();
+                }
+                
+                addLog('Initializing floating widget...');
+                
+                widget = window.CustomGPTWidget.init({
+                    apiKey: 'test-api-key',
+                    agentId: '123',
+                    agentName: 'Test Assistant',
+                    mode: 'floating',
+                    position: 'bottom-right',
+                    enableConversationManagement: true,
+                    maxConversations: 5,
+                    onOpen: () => {
+                        addLog('Widget opened', 'event');
+                    },
+                    onClose: () => {
+                        addLog('Widget closed', 'event');
+                    },
+                    onMessage: (message) => {
+                        addLog(`Message sent: ${message.content || message}`, 'event');
+                    },
+                    onConversationChange: (conversation) => {
+                        addLog(`Conversation changed: ${conversation.title}`, 'event');
+                    }
+                });
+                
+                // Store reference globally for debugging
+                window.testWidget = widget;
+                
+                addLog('Widget initialized successfully', 'success');
+                showStatus('Widget initialized! Look for the floating button in the bottom-right corner.');
+                
+                // Log widget state
+                addLog(`Widget state: isOpen=${widget.isOpened}`, 'info');
+                
+            } catch (error) {
+                addLog(`Error initializing widget: ${error.message}`, 'error');
+                showStatus(`Error: ${error.message}`, true);
+            }
+        }
+        
+        function destroyWidget() {
+            if (!widget) {
+                addLog('No widget to destroy', 'warn');
+                showStatus('No widget instance found', true);
+                return;
+            }
+            
+            try {
+                widget.destroy();
+                widget = null;
+                window.testWidget = null;
+                addLog('Widget destroyed', 'success');
+                showStatus('Widget destroyed successfully');
+            } catch (error) {
+                addLog(`Error destroying widget: ${error.message}`, 'error');
+                showStatus(`Error: ${error.message}`, true);
+            }
+        }
+        
+        function toggleWidget() {
+            if (!widget) {
+                addLog('No widget to toggle', 'warn');
+                showStatus('Initialize the widget first', true);
+                return;
+            }
+            
+            try {
+                widget.toggle();
+                addLog(`Widget toggled. New state: isOpen=${widget.isOpened}`, 'info');
+            } catch (error) {
+                addLog(`Error toggling widget: ${error.message}`, 'error');
+            }
+        }
+        
+        function getWidgetState() {
+            if (!widget) {
+                addLog('No widget instance', 'warn');
+                return;
+            }
+            
+            addLog('=== Widget State ===', 'info');
+            addLog(`isOpen: ${widget.isOpened}`, 'info');
+            addLog(`mode: ${widget.configuration.mode}`, 'info');
+            addLog(`conversations: ${widget.getConversations().length}`, 'info');
+            
+            const conversations = widget.getConversations();
+            if (conversations.length > 0) {
+                addLog('Conversations:', 'info');
+                conversations.forEach((conv, i) => {
+                    addLog(`  ${i + 1}. ${conv.title} (${conv.id})`, 'info');
+                });
+            }
+        }
+        
+        // Add initial log entry
+        addLog('Test page loaded. Click "Initialize Floating Widget" to begin.');
+    </script>
+</body>
+</html>

@@ -446,6 +446,9 @@ export interface FileUpload {
   
   /** Error message if upload failed */
   error?: string;
+  
+  /** The actual File object */
+  file: File;
 }
 
 // ========== API Response Types ==========

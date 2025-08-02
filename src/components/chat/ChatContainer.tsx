@@ -34,6 +34,7 @@ import { ChatInput } from './ChatInput';
 import { TypingIndicator } from './TypingIndicator';
 import { AgentSelector } from './AgentSelector';
 import { CitationDetailsModal } from './CitationDetailsModal';
+import { ConversationManager } from './ConversationManager';
 import { logger } from '@/lib/logger';
 
 /**
@@ -295,6 +296,18 @@ interface ChatHeaderProps {
   onClose?: () => void;
   /** Handler for agent settings button */
   onAgentSettings?: (agent: Agent) => void;
+  /** Enable conversation management UI */
+  enableConversationManagement?: boolean;
+  /** Maximum conversations per session */
+  maxConversations?: number;
+  /** Session ID for conversation isolation */
+  sessionId?: string;
+  /** Current conversation ID */
+  currentConversationId?: string;
+  /** Callback when conversation changes */
+  onConversationChange?: (conversation: any) => void;
+  /** Callback to create new conversation */
+  onCreateConversation?: () => void;
 }
 
 /**
@@ -309,35 +322,47 @@ interface ChatHeaderProps {
 const ChatHeader: React.FC<ChatHeaderProps> = ({ 
   mode = 'standalone', 
   onClose,
-  onAgentSettings 
+  onAgentSettings,
+  enableConversationManagement = false,
+  maxConversations,
+  sessionId,
+  currentConversationId,
+  onConversationChange,
+  onCreateConversation
 }) => {
   const { currentAgent } = useAgentStore();
   
   if (mode === 'widget' || mode === 'floating') {
     return (
-      <header className="flex items-center justify-between px-4 py-3 border-b border-gray-200 bg-white">
-        <div className="flex items-center gap-3 flex-1 min-w-0">
-          <div className="w-8 h-8 rounded-lg bg-brand-500 flex items-center justify-center flex-shrink-0">
-            <Bot className="w-5 h-5 text-white" />
-          </div>
-          <div className="min-w-0 flex-1">
-            <h2 className="font-semibold text-gray-900 truncate">
-              {currentAgent?.project_name || 'CustomGPT Assistant'}
-            </h2>
-            <p className="text-xs text-gray-500">
-              {currentAgent?.is_chat_active ? 'Online' : 'Offline'}
-            </p>
-          </div>
-        </div>
-        
-        <div className="flex items-center gap-2">
-          {/* Agent Selector - Compact for widget/floating mode */}
-          <div className="w-40">
-            <AgentSelector
-              onSettingsClick={onAgentSettings}
+      <header className="border-b border-gray-200 bg-white">
+        {/* Conversation Manager */}
+        {enableConversationManagement && sessionId && (
+          <div className="px-4 py-2 border-b border-gray-100">
+            <ConversationManager
+              sessionId={sessionId}
+              maxConversations={maxConversations}
+              currentConversationId={currentConversationId}
+              onConversationChange={onConversationChange}
+              onCreateConversation={onCreateConversation}
               className="w-full"
-              showSettings={false}
             />
+          </div>
+        )}
+        
+        {/* Header Content */}
+        <div className="flex items-center justify-between px-4 py-3">
+          <div className="flex items-center gap-3 flex-1 min-w-0">
+            <div className="w-8 h-8 rounded-lg bg-brand-500 flex items-center justify-center flex-shrink-0">
+              <Bot className="w-5 h-5 text-white" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <h2 className="font-semibold text-gray-900 truncate">
+                {currentAgent?.project_name || 'CustomGPT Assistant'}
+              </h2>
+              <p className="text-xs text-gray-500">
+                {currentAgent?.is_chat_active ? 'Online' : 'Offline'}
+              </p>
+            </div>
           </div>
           
           {onClose && (
@@ -389,6 +414,18 @@ interface ChatContainerProps {
   onClose?: () => void;
   /** Handler when agent settings are requested */
   onAgentSettings?: (agent: Agent) => void;
+  /** Enable conversation management UI */
+  enableConversationManagement?: boolean;
+  /** Maximum conversations per session */
+  maxConversations?: number;
+  /** Session ID for conversation isolation */
+  sessionId?: string;
+  /** Specific conversation thread to load */
+  threadId?: string;
+  /** Callback when conversation changes */
+  onConversationChange?: (conversation: any) => void;
+  /** Callback when message is sent/received */
+  onMessage?: (message: any) => void;
 }
 
 /**
@@ -423,10 +460,43 @@ export const ChatContainer: React.FC<ChatContainerProps> = ({
   mode = 'standalone',
   className,
   onClose,
-  onAgentSettings
+  onAgentSettings,
+  enableConversationManagement = false,
+  maxConversations,
+  sessionId,
+  threadId,
+  onConversationChange,
+  onMessage
 }) => {
   const { sendMessage, isStreaming, cancelStreaming } = useMessageStore();
   const { fetchAgents, agents, currentAgent } = useAgentStore();
+  const { currentConversation } = useConversationStore();
+  
+  // Track current conversation for the widget
+  const [currentConversationId, setCurrentConversationId] = React.useState<string | null>(null);
+  
+  // Handle conversation management
+  const handleConversationChange = (conversation: any) => {
+    setCurrentConversationId(conversation.id);
+    onConversationChange?.(conversation);
+    // The widget will handle the actual conversation switch
+    if (typeof window !== 'undefined' && (window as any).CustomGPTWidget) {
+      const widget = (window as any).__customgpt_widget_instance;
+      if (widget) {
+        widget.switchConversation(conversation.id);
+      }
+    }
+  };
+  
+  const handleCreateConversation = () => {
+    if (typeof window !== 'undefined' && (window as any).CustomGPTWidget) {
+      const widget = (window as any).__customgpt_widget_instance;
+      if (widget) {
+        const newConv = widget.createConversation();
+        setCurrentConversationId(newConv.id);
+      }
+    }
+  };
 
   /**
    * Agent initialization effect
@@ -510,6 +580,12 @@ export const ChatContainer: React.FC<ChatContainerProps> = ({
         mode={mode} 
         onClose={onClose}
         onAgentSettings={handleAgentSettings}
+        enableConversationManagement={enableConversationManagement}
+        maxConversations={maxConversations}
+        sessionId={sessionId}
+        currentConversationId={currentConversationId || currentConversation?.id.toString()}
+        onConversationChange={handleConversationChange}
+        onCreateConversation={handleCreateConversation}
       />
       <MessageArea className="flex-1" />
       <ChatInput
@@ -517,6 +593,20 @@ export const ChatContainer: React.FC<ChatContainerProps> = ({
         disabled={isStreaming}
         placeholder={isStreaming ? "AI is thinking..." : "Send a message..."}
       />
+      
+      {/* Branding Footer */}
+      {(mode === 'widget' || mode === 'floating') && (
+        <div className="px-4 py-2 border-t border-gray-100 bg-gray-50">
+          <a
+            href="https://customgpt.ai"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-xs text-gray-500 hover:text-gray-700 transition-colors block text-center"
+          >
+            Powered by CustomGPT.ai
+          </a>
+        </div>
+      )}
     </div>
   );
 };

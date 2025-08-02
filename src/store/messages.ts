@@ -115,6 +115,9 @@ export const useMessageStore = create<MessageStore>((set, get) => ({
    * @param files - Optional file attachments
    */
   sendMessage: async (content: string, files?: File[]) => {
+    // Check if in demo mode
+    const isDemoMode = typeof window !== 'undefined' && (window as any).__customgpt_demo_mode;
+    
     const agentStore = useAgentStore.getState();
     const conversationStore = useConversationStore.getState();
     
@@ -472,6 +475,34 @@ export const useMessageStore = create<MessageStore>((set, get) => ({
    * @param conversationId - The conversation to load messages for
    */
   loadMessages: async (conversationId: string) => {
+    // Skip API calls in demo mode
+    const isDemoMode = typeof window !== 'undefined' && (window as any).__customgpt_demo_mode;
+    if (isDemoMode) {
+      logger.info('MESSAGES', 'Skipping message load in demo mode', { conversationId });
+      // Just ensure the conversation has an entry in the messages map
+      set(state => {
+        const newMessages = new Map(state.messages);
+        if (!newMessages.has(conversationId)) {
+          newMessages.set(conversationId, []);
+        }
+        return { messages: newMessages, loading: false };
+      });
+      return;
+    }
+    
+    // Skip API calls for locally created conversations (they don't exist on server)
+    if (conversationId.startsWith('conv_')) {
+      logger.info('MESSAGES', 'Skipping API load for local conversation', { conversationId });
+      set(state => {
+        const newMessages = new Map(state.messages);
+        if (!newMessages.has(conversationId)) {
+          newMessages.set(conversationId, []);
+        }
+        return { messages: newMessages, loading: false };
+      });
+      return;
+    }
+    
     const agentStore = useAgentStore.getState();
     const conversationStore = useConversationStore.getState();
     const { currentAgent } = agentStore;
@@ -485,8 +516,18 @@ export const useMessageStore = create<MessageStore>((set, get) => ({
     // Find the conversation to get its session_id
     const conversation = conversations.find(c => c.id.toString() === conversationId);
     if (!conversation) {
-      logger.error('MESSAGES', 'Conversation not found', { conversationId });
-      set({ error: 'Conversation not found', loading: false });
+      logger.error('MESSAGES', 'Conversation not found in store', { 
+        conversationId,
+        availableConversations: conversations.map(c => c.id)
+      });
+      // Don't set error, just ensure empty message array exists
+      set(state => {
+        const newMessages = new Map(state.messages);
+        if (!newMessages.has(conversationId)) {
+          newMessages.set(conversationId, []);
+        }
+        return { messages: newMessages, loading: false };
+      });
       return;
     }
 

@@ -284,7 +284,10 @@ export const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
 
   // Fetch conversations when agent changes
   useEffect(() => {
-    if (currentAgent) {
+    // Skip API calls in demo mode
+    const isDemoMode = typeof window !== 'undefined' && (window as any).__customgpt_demo_mode;
+    
+    if (currentAgent && !isDemoMode) {
       logger.info('UI', 'Agent changed in sidebar, fetching conversations', {
         agentId: currentAgent.id,
         agentName: currentAgent.project_name,
@@ -292,9 +295,11 @@ export const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
       });
       console.log('ConversationSidebar: Agent changed, fetching conversations for:', currentAgent.project_name, currentAgent.id);
       fetchConversations(currentAgent.id);
-    } else {
+    } else if (!currentAgent) {
       logger.warn('UI', 'No current agent selected in sidebar');
       console.log('ConversationSidebar: No current agent selected');
+    } else if (isDemoMode) {
+      logger.info('UI', 'Skipping conversation fetch in demo mode');
     }
   }, [currentAgent, fetchConversations]);
 

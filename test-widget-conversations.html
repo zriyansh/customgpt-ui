@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Widget Conversations</title>
+    
+    <!-- Include widget files -->
+    <script src="./dist/widget/vendors.js"></script>
+    <script src="./dist/widget/customgpt-widget.js"></script>
+    <link rel="stylesheet" href="./dist/widget/customgpt-widget.css">
+    
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+        }
+        .widget-container {
+            margin: 20px auto;
+            max-width: 400px;
+        }
+        .debug-panel {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-top: 20px;
+        }
+        .debug-panel h2 {
+            margin-top: 0;
+            font-size: 18px;
+        }
+        .debug-output {
+            background: #f5f5f5;
+            padding: 10px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 12px;
+            white-space: pre-wrap;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        button {
+            background: #007acc;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #005a9e;
+        }
+        .info {
+            background: #e3f2fd;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>CustomGPT Widget - Conversation Management Test</h1>
+        
+        <div class="info">
+            <strong>Test Instructions:</strong>
+            <ol>
+                <li>Widget should load with starter questions visible</li>
+                <li>Click "New Conversation" to create a new chat</li>
+                <li>New conversations should show starter questions</li>
+                <li>No "Conversation not found" errors should appear</li>
+                <li>Switching between conversations should work smoothly</li>
+            </ol>
+        </div>
+
+        <div class="widget-container">
+            <div id="chat-widget" style="height: 600px;"></div>
+        </div>
+
+        <div class="debug-panel">
+            <h2>Debug Information</h2>
+            <button onclick="getConversations()">Get Conversations</button>
+            <button onclick="getCurrentConversation()">Get Current</button>
+            <button onclick="clearStorage()">Clear Storage</button>
+            <button onclick="checkStores()">Check Stores</button>
+            <div id="debug-output" class="debug-output"></div>
+        </div>
+    </div>
+
+    <script>
+        let widget;
+        
+        // Initialize widget
+        window.addEventListener('load', () => {
+            widget = CustomGPTWidget.init({
+                apiKey: 'demo-api-key', // Replace with your API key
+                agentId: '123',         // Replace with your agent ID
+                agentName: 'Test Assistant',
+                containerId: 'chat-widget',
+                mode: 'embedded',
+                enableConversationManagement: true,
+                maxConversations: 5,
+                onConversationChange: (conv) => {
+                    console.log('Conversation changed:', conv);
+                    updateDebug(`Conversation changed: ${conv.title} (${conv.id})`);
+                },
+                onMessage: (msg) => {
+                    console.log('Message:', msg);
+                    updateDebug(`Message sent/received`);
+                }
+            });
+            
+            updateDebug('Widget initialized');
+        });
+
+        function updateDebug(message) {
+            const output = document.getElementById('debug-output');
+            const timestamp = new Date().toLocaleTimeString();
+            output.textContent = `[${timestamp}] ${message}\n${output.textContent}`;
+        }
+
+        function getConversations() {
+            const conversations = widget.getConversations();
+            updateDebug(`Found ${conversations.length} conversations:\n${JSON.stringify(conversations, null, 2)}`);
+        }
+
+        function getCurrentConversation() {
+            const conversations = widget.getConversations();
+            const current = conversations.find(c => c.id === widget.currentConversationId);
+            updateDebug(`Current conversation:\n${JSON.stringify(current, null, 2)}`);
+        }
+
+        function clearStorage() {
+            if (confirm('This will clear all conversations. Are you sure?')) {
+                localStorage.clear();
+                updateDebug('Storage cleared. Reload page to reset.');
+            }
+        }
+
+        function checkStores() {
+            // Check conversation store
+            if (window.useConversationStore) {
+                const convStore = window.useConversationStore.getState();
+                updateDebug(`Conversation Store:\n- Conversations: ${convStore.conversations.length}\n- Current: ${convStore.currentConversation?.id || 'none'}`);
+            }
+            
+            // Check message store
+            if (window.useMessageStore) {
+                const msgStore = window.useMessageStore.getState();
+                updateDebug(`Message Store:\n- Message Maps: ${msgStore.messages.size}\n- Is Streaming: ${msgStore.isStreaming}`);
+            }
+        }
+    </script>
+</body>
+</html>

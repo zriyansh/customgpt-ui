@@ -5,6 +5,49 @@ import { getClient } from '@/lib/api/client';
 import { generateConversationName } from '@/lib/utils';
 import { logger } from '@/lib/logger';
 
+// Session-based conversation isolation
+const getSessionId = (): string => {
+  // Check if we're running on the server
+  if (typeof window === 'undefined') {
+    return 'server-session';
+  }
+  
+  // Use the current widget session if available
+  if ((window as any).__customgpt_current_session) {
+    return (window as any).__customgpt_current_session;
+  }
+  
+  // Check if we're in widget mode with session configuration
+  if ((window as any).__customgpt_session) {
+    return (window as any).__customgpt_session.sessionId;
+  }
+  
+  // Check for instance-specific sessions (for isolated widgets)
+  if ((window as any).__customgpt_sessions) {
+    // For isolated widgets, we need to determine which session to use
+    // This is tricky since stores are global - we'll use the most recent session
+    const sessions = (window as any).__customgpt_sessions;
+    const sessionIds = Object.keys(sessions);
+    if (sessionIds.length > 0) {
+      // Return the most recently created session
+      return sessionIds[sessionIds.length - 1];
+    }
+  }
+  
+  // Fallback to browser-based session ID
+  try {
+    let sessionId = sessionStorage.getItem('customgpt_session_id');
+    if (!sessionId) {
+      sessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      sessionStorage.setItem('customgpt_session_id', sessionId);
+    }
+    return sessionId;
+  } catch (e) {
+    // Fallback if sessionStorage is not available
+    return `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  }
+};
+
 export const useConversationStore = create<ConversationStore>()(
   persist(
     (set, get) => ({
@@ -59,10 +102,11 @@ export const useConversationStore = create<ConversationStore>()(
             status: (error as any)?.status,
             message: (error as any)?.message
           });
+          // Don't clear existing conversations on error - preserve local state
           set({ 
             error: error instanceof Error ? error.message : 'Failed to fetch conversations',
             loading: false,
-            conversations: [] // Ensure conversations is always an array
+            // Keep existing conversations instead of clearing them
           });
         }
       },
@@ -179,7 +223,7 @@ export const useConversationStore = create<ConversationStore>()(
       },
     }),
     {
-      name: 'customgpt-conversations',
+      name: `customgpt-conversations-${getSessionId()}`,
       partialize: (state) => ({
         conversations: state.conversations,
         currentConversation: state.currentConversation,

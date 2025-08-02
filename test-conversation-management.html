@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Conversation Management - CustomGPT</title>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .test-section {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+        }
+        .test-section h2 {
+            margin-top: 0;
+            color: #007acc;
+        }
+        .test-info {
+            background-color: #e3f2fd;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        .test-info ul {
+            margin: 10px 0;
+            padding-left: 20px;
+        }
+        .error-message {
+            background-color: #ffebee;
+            color: #c62828;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        .success-message {
+            background-color: #e8f5e9;
+            color: #2e7d32;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        .controls {
+            margin: 20px 0;
+        }
+        .controls button {
+            margin-right: 10px;
+            padding: 8px 16px;
+            background-color: #007acc;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .controls button:hover {
+            background-color: #005fa3;
+        }
+        .controls button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Test Conversation Management</h1>
+        
+        <div class="test-section">
+            <h2>Test Configuration</h2>
+            <div class="test-info">
+                <p><strong>What this tests:</strong></p>
+                <ul>
+                    <li>Session-based conversation isolation (each browser/device gets separate conversations)</li>
+                    <li>Conversation persistence across widget close/reopen</li>
+                    <li>Maximum conversation limit enforcement</li>
+                    <li>Conversation switching functionality</li>
+                    <li>Conversation title editing (click the pencil icon)</li>
+                    <li>localStorage error handling (private browsing, quota exceeded)</li>
+                </ul>
+                <p><strong>How to test:</strong></p>
+                <ul>
+                    <li>Open the widget or floating button and create multiple conversations</li>
+                    <li>Close and reopen the widget - conversations should persist</li>
+                    <li>Try creating more than 5 conversations - you should see a limit message</li>
+                    <li>Click the pencil icon (✏️) next to the conversation dropdown to edit titles</li>
+                    <li>While editing: Press Enter to save, Escape to cancel, or click outside</li>
+                    <li>Open this page in a different browser/incognito - you should see new conversations</li>
+                    <li>Test in private browsing mode to verify localStorage fallback</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h2>Widget Test</h2>
+            <div id="widget-root"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>Floating Button Test</h2>
+            <p>Look for the floating button in the bottom-right corner of the screen.</p>
+            <div id="floating-root"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>localStorage Status</h2>
+            <div id="storage-status"></div>
+            <div class="controls">
+                <button onclick="clearConversations()">Clear All Conversations</button>
+                <button onclick="checkStorageQuota()">Check Storage Quota</button>
+                <button onclick="simulateQuotaExceeded()">Simulate Quota Exceeded</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="text/babel" src="./examples/CustomGPTWidget.jsx"></script>
+    <script type="text/babel" src="./examples/CustomGPTFloatingButton.jsx"></script>
+    
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+        
+        // Test API key and agent ID (replace with your actual values)
+        const TEST_API_KEY = 'your-api-key-here';
+        const TEST_AGENT_ID = '123';
+        const TEST_AGENT_NAME = 'Test Bot';
+        
+        // Storage status component
+        function StorageStatus() {
+            const [status, setStatus] = useState({});
+            
+            useEffect(() => {
+                updateStatus();
+                window.addEventListener('storage', updateStatus);
+                return () => window.removeEventListener('storage', updateStatus);
+            }, []);
+            
+            const updateStatus = () => {
+                try {
+                    const isAvailable = checkLocalStorageAvailable();
+                    const sessionId = localStorage.getItem('customgpt_session_id');
+                    const conversationKeys = Object.keys(localStorage).filter(key => 
+                        key.startsWith('customgpt_conversations_')
+                    );
+                    
+                    let totalConversations = 0;
+                    let conversationData = {};
+                    
+                    conversationKeys.forEach(key => {
+                        try {
+                            const data = JSON.parse(localStorage.getItem(key));
+                            conversationData[key] = data;
+                            totalConversations += data.conversationCount || 0;
+                        } catch (e) {
+                            console.error('Error parsing conversation data:', e);
+                        }
+                    });
+                    
+                    setStatus({
+                        available: isAvailable,
+                        sessionId,
+                        conversationKeys,
+                        totalConversations,
+                        conversationData,
+                        storageUsed: new Blob(Object.values(localStorage)).size
+                    });
+                } catch (e) {
+                    setStatus({ error: e.message });
+                }
+            };
+            
+            if (status.error) {
+                return <div className="error-message">Storage Error: {status.error}</div>;
+            }
+            
+            return (
+                <div>
+                    <p><strong>localStorage Available:</strong> {status.available ? 'Yes' : 'No'}</p>
+                    <p><strong>Session ID:</strong> {status.sessionId || 'Not set'}</p>
+                    <p><strong>Total Conversations:</strong> {status.totalConversations}</p>
+                    <p><strong>Storage Used:</strong> {(status.storageUsed / 1024).toFixed(2)} KB</p>
+                    {status.conversationKeys && status.conversationKeys.length > 0 && (
+                        <details>
+                            <summary>Conversation Details</summary>
+                            <pre>{JSON.stringify(status.conversationData, null, 2)}</pre>
+                        </details>
+                    )}
+                </div>
+            );
+        }
+        
+        // Utility functions
+        function checkLocalStorageAvailable() {
+            try {
+                const test = '__test__';
+                localStorage.setItem(test, test);
+                localStorage.removeItem(test);
+                return true;
+            } catch (e) {
+                return false;
+            }
+        }
+        
+        window.clearConversations = function() {
+            if (confirm('Are you sure you want to clear all conversations?')) {
+                const keys = Object.keys(localStorage).filter(key => 
+                    key.startsWith('customgpt_conversations_')
+                );
+                keys.forEach(key => localStorage.removeItem(key));
+                alert('All conversations cleared. Refresh the page to see the changes.');
+                window.location.reload();
+            }
+        };
+        
+        window.checkStorageQuota = async function() {
+            if ('storage' in navigator && 'estimate' in navigator.storage) {
+                const estimate = await navigator.storage.estimate();
+                const percentUsed = (estimate.usage / estimate.quota * 100).toFixed(2);
+                alert(`Storage Quota:\nUsed: ${(estimate.usage / 1024 / 1024).toFixed(2)} MB\nQuota: ${(estimate.quota / 1024 / 1024).toFixed(2)} MB\nPercent Used: ${percentUsed}%`);
+            } else {
+                alert('Storage quota API not available in this browser');
+            }
+        };
+        
+        window.simulateQuotaExceeded = function() {
+            try {
+                // Try to fill localStorage
+                let i = 0;
+                const largeString = new Array(1024 * 100).join('x'); // 100KB string
+                while (true) {
+                    localStorage.setItem(`test_fill_${i}`, largeString);
+                    i++;
+                }
+            } catch (e) {
+                if (e.name === 'QuotaExceededError') {
+                    alert('Successfully simulated quota exceeded error. The components should handle this gracefully.');
+                } else {
+                    alert('Error: ' + e.message);
+                }
+            }
+        };
+        
+        // Render components
+        const WidgetDemo = () => {
+            const [key, setKey] = useState(0);
+            
+            return (
+                <div>
+                    <button onClick={() => setKey(k => k + 1)} style={{ marginBottom: '10px' }}>
+                        Remount Widget
+                    </button>
+                    <CustomGPTWidget
+                        key={key}
+                        apiKey={TEST_API_KEY}
+                        agentId={TEST_AGENT_ID}
+                        agentName={TEST_AGENT_NAME}
+                        width="100%"
+                        height="500px"
+                        alignment="center"
+                        maxConversations={5}
+                        enableConversationManagement={true}
+                        onConversationChange={(conv) => {
+                            console.log('Widget conversation changed:', conv);
+                            document.querySelector('#storage-status').dispatchEvent(new Event('update'));
+                        }}
+                        onError={(error) => {
+                            console.error('Widget error:', error);
+                            alert('Widget Error: ' + error.message);
+                        }}
+                    />
+                </div>
+            );
+        };
+        
+        const FloatingDemo = () => {
+            return (
+                <CustomGPTFloatingButton
+                    apiKey={TEST_API_KEY}
+                    agentId={TEST_AGENT_ID}
+                    agentName={TEST_AGENT_NAME}
+                    position="bottom-right"
+                    maxConversations={5}
+                    enableConversationManagement={true}
+                    onConversationChange={(conv) => {
+                        console.log('Floating button conversation changed:', conv);
+                        document.querySelector('#storage-status').dispatchEvent(new Event('update'));
+                    }}
+                    onError={(error) => {
+                        console.error('Floating button error:', error);
+                        alert('Floating Button Error: ' + error.message);
+                    }}
+                />
+            );
+        };
+        
+        // Mount components
+        ReactDOM.render(<WidgetDemo />, document.getElementById('widget-root'));
+        ReactDOM.render(<FloatingDemo />, document.getElementById('floating-root'));
+        ReactDOM.render(<StorageStatus />, document.getElementById('storage-status'));
+        
+        // Log initial state
+        console.log('Test page loaded. Replace TEST_API_KEY and TEST_AGENT_ID with your actual values.');
+    </script>
+</body>
+</html>
