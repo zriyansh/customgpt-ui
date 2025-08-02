@@ -25,6 +25,7 @@ import React, { useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { Sparkles, Bot } from 'lucide-react';
 import Link from 'next/link';
+import { toast } from 'sonner';
 
 import type { ChatMessage, Citation, Agent } from '@/types';
 import { cn } from '@/lib/utils';
@@ -308,6 +309,8 @@ interface ChatHeaderProps {
   onConversationChange?: (conversation: any) => void;
   /** Callback to create new conversation */
   onCreateConversation?: () => void;
+  /** Key to trigger ConversationManager refresh */
+  conversationRefreshKey?: number;
 }
 
 /**
@@ -328,7 +331,8 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({
   sessionId,
   currentConversationId,
   onConversationChange,
-  onCreateConversation
+  onCreateConversation,
+  conversationRefreshKey
 }) => {
   const { currentAgent } = useAgentStore();
   
@@ -345,6 +349,7 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({
               onConversationChange={onConversationChange}
               onCreateConversation={onCreateConversation}
               className="w-full"
+              refreshKey={conversationRefreshKey}
             />
           </div>
         )}
@@ -426,6 +431,8 @@ interface ChatContainerProps {
   onConversationChange?: (conversation: any) => void;
   /** Callback when message is sent/received */
   onMessage?: (message: any) => void;
+  /** Key to trigger ConversationManager refresh */
+  conversationRefreshKey?: number;
 }
 
 /**
@@ -466,7 +473,8 @@ export const ChatContainer: React.FC<ChatContainerProps> = ({
   sessionId,
   threadId,
   onConversationChange,
-  onMessage
+  onMessage,
+  conversationRefreshKey
 }) => {
   const { sendMessage, isStreaming, cancelStreaming } = useMessageStore();
   const { fetchAgents, agents, currentAgent } = useAgentStore();
@@ -493,7 +501,13 @@ export const ChatContainer: React.FC<ChatContainerProps> = ({
       const widget = (window as any).__customgpt_widget_instance;
       if (widget) {
         const newConv = widget.createConversation();
-        setCurrentConversationId(newConv.id);
+        if (newConv) {
+          setCurrentConversationId(newConv.id);
+        } else {
+          // Show user-friendly message when conversation limit is reached
+          const maxConversations = widget.configuration?.maxConversations || 5;
+          toast.error(`You've reached the maximum limit of ${maxConversations} conversations. Please delete an existing conversation to create a new one.`);
+        }
       }
     }
   };
@@ -586,6 +600,7 @@ export const ChatContainer: React.FC<ChatContainerProps> = ({
         currentConversationId={currentConversationId || currentConversation?.id.toString()}
         onConversationChange={handleConversationChange}
         onCreateConversation={handleCreateConversation}
+        conversationRefreshKey={conversationRefreshKey}
       />
       <MessageArea className="flex-1" />
       <ChatInput

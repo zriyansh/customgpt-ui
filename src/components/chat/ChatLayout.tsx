@@ -70,6 +70,10 @@ interface ChatLayoutProps {
   threadId?: string;
   onConversationChange?: (conversation: any) => void;
   onMessage?: (message: any) => void;
+  widgetInstance?: any; // Widget instance for isolated conversation management
+  conversations?: any[]; // Current conversations for isolated mode
+  currentConversation?: any; // Current conversation for isolated mode
+  conversationRefreshKey?: number; // Key to trigger ConversationManager refresh
 }
 
 /**
@@ -90,10 +94,14 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({
   sessionId,
   threadId,
   onConversationChange,
-  onMessage
+  onMessage,
+  widgetInstance,
+  conversations,
+  currentConversation,
+  conversationRefreshKey
 }) => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const { currentConversation } = useConversationStore();
+  const { currentConversation: storeCurrentConversation } = useConversationStore();
   const { loadMessages } = useMessageStore();
 
   /**
@@ -107,10 +115,10 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({
     // Skip API calls in demo mode to prevent errors
     const isDemoMode = typeof window !== 'undefined' && (window as any).__customgpt_demo_mode;
     
-    if (currentConversation && !isDemoMode) {
-      loadMessages(currentConversation.id.toString());
+    if (storeCurrentConversation && !isDemoMode) {
+      loadMessages(storeCurrentConversation.id.toString());
     }
-  }, [currentConversation, loadMessages]);
+  }, [storeCurrentConversation, loadMessages]);
 
   // Hide sidebar for widget and floating modes
   // Only standalone mode shows the conversation sidebar
@@ -140,6 +148,7 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({
         threadId={threadId}
         onConversationChange={onConversationChange}
         onMessage={onMessage}
+        conversationRefreshKey={conversationRefreshKey}
       />
     );
   }
@@ -165,6 +174,7 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({
           threadId={threadId}
           onConversationChange={onConversationChange}
           onMessage={onMessage}
+          conversationRefreshKey={conversationRefreshKey}
         />
       </div>
     </div>

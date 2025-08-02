@@ -104,6 +104,7 @@ class CustomGPTWidget {
   private sessionId: string;
   private currentConversationId: string | null = null;
   private instanceKey?: string;
+  private conversationRefreshKey: number = 0;
 
   constructor(config: CustomGPTWidgetConfig) {
     // Validate required fields
@@ -153,6 +154,9 @@ class CustomGPTWidget {
     if (typeof window !== 'undefined') {
       const instanceKey = `__customgpt_widget_${this.sessionId}`;
       (window as any)[instanceKey] = this;
+      
+      // Also store as the expected key for ChatContainer
+      (window as any).__customgpt_widget_instance = this;
       
       // Store instance key for later reference
       this.instanceKey = instanceKey;
@@ -265,13 +269,18 @@ class CustomGPTWidget {
     // Create container based on mode
     this.createContainer();
     
-    // Initialize conversation if needed
+    // Render the widget first
+    this.render();
+    
+    // Initialize conversation after render to ensure ConversationManager is mounted
     if (this.config.enableConversationManagement) {
       const conversations = this.getConversations();
       
       if (conversations.length === 0) {
-        // Create initial conversation
-        this.createConversation('New Chat');
+        // Create initial conversation after a small delay to ensure components are mounted
+        setTimeout(() => {
+          this.createConversation('New Chat');
+        }, 100);
       } else {
         // Set current conversation to the first one
         this.currentConversationId = conversations[0].id;
@@ -305,9 +314,6 @@ class CustomGPTWidget {
       // Set the current active widget session
       (window as any).__customgpt_active_widget_session = this.sessionId;
     }
-    
-    // Render the widget
-    this.render();
   }
 
   private createContainer() {
@@ -410,6 +416,11 @@ class CustomGPTWidget {
     }
     
     const WidgetApp = () => {
+      // Update the global reference to current widget instance
+      if (typeof window !== 'undefined') {
+        (window as any).__customgpt_widget_instance = this;
+      }
+      
       const handleClose = () => {
         this.close();
         this.config.onClose?.();
@@ -444,6 +455,8 @@ class CustomGPTWidget {
             conversations={this.config.isolateConversations !== false ? this.getConversations() : undefined}
             currentConversation={this.config.isolateConversations !== false && this.currentConversationId ? 
               this.getConversations().find(c => c.id === this.currentConversationId) : undefined}
+            // Pass refresh key to trigger ConversationManager updates
+            conversationRefreshKey={this.conversationRefreshKey}
           />
           <Toaster 
             position="top-center" 
@@ -490,6 +503,9 @@ class CustomGPTWidget {
     if (conversation) {
       this.currentConversationId = conversationId;
       
+      // Increment refresh key to trigger ConversationManager update
+      this.conversationRefreshKey++;
+      
       // Don't update the global store if we're in isolated mode
       // The render() method will handle passing the correct conversation
       if (!this.config.isolateConversations) {
@@ -535,7 +551,8 @@ class CustomGPTWidget {
     
     // Check max conversations limit (only if specified by user)
     if (this.config.maxConversations && conversations.length >= this.config.maxConversations) {
-      throw new Error(`Maximum conversation limit (${this.config.maxConversations}) reached`);
+      console.warn(`Maximum conversation limit (${this.config.maxConversations}) reached`);
+      return null; // Return null instead of throwing error
     }
     
     const newConversation = {
@@ -582,6 +599,9 @@ class CustomGPTWidget {
       }
     }
     
+    // Increment refresh key to trigger ConversationManager update
+    this.conversationRefreshKey++;
+    
     // Trigger re-render with new conversation
     this.render();
     
@@ -600,6 +620,8 @@ class CustomGPTWidget {
     if (conversation) {
       conversation.title = newTitle;
       this.saveConversations(conversations);
+      // Increment refresh key to trigger ConversationManager update
+      this.conversationRefreshKey++;
       this.render();
     }
   }
@@ -614,6 +636,9 @@ class CustomGPTWidget {
     
     this.saveConversations(filtered);
     
+    // Increment refresh key to trigger ConversationManager update
+    this.conversationRefreshKey++;
+    
     // If deleting current conversation, switch to another or create new
     if (this.currentConversationId === conversationId) {
       if (filtered.length > 0) {
@@ -621,6 +646,9 @@ class CustomGPTWidget {
       } else {
         this.createConversation();
       }
+    } else {
+      // Still need to re-render to update the conversation list
+      this.render();
     }
   }
 

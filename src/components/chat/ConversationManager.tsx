@@ -16,6 +16,7 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, MessageCircle, Edit2, Trash2, Check, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 
 interface Conversation {
@@ -32,6 +33,7 @@ interface ConversationManagerProps {
   onConversationChange?: (conversation: Conversation) => void;
   onCreateConversation?: () => void;
   className?: string;
+  refreshKey?: number; // Add refresh key to force re-render
 }
 
 export const ConversationManager: React.FC<ConversationManagerProps> = ({
@@ -41,6 +43,7 @@ export const ConversationManager: React.FC<ConversationManagerProps> = ({
   onConversationChange,
   onCreateConversation,
   className,
+  refreshKey,
 }) => {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -65,11 +68,11 @@ export const ConversationManager: React.FC<ConversationManagerProps> = ({
     // Listen for storage changes
     window.addEventListener('storage', loadConversations);
     return () => window.removeEventListener('storage', loadConversations);
-  }, [sessionId]);
+  }, [sessionId, refreshKey]); // Add refreshKey as dependency
 
   const handleCreateConversation = () => {
     if (maxConversations && conversations.length >= maxConversations) {
-      alert(`Maximum conversation limit (${maxConversations}) reached`);
+      toast.error(`You've reached the maximum limit of ${maxConversations} conversations. Please delete an existing conversation to create a new one.`);
       return;
     }
     onCreateConversation?.();
@@ -99,7 +102,7 @@ export const ConversationManager: React.FC<ConversationManagerProps> = ({
 
   const handleDelete = (conversationId: string) => {
     if (conversations.length <= 1) {
-      alert('Cannot delete the last conversation');
+      toast.error('Cannot delete the last conversation');
       return;
     }
     
