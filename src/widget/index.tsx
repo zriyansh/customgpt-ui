@@ -9,6 +9,7 @@ import { useConfigStore, useAgentStore } from '../store';
 import { ChatLayout } from '../components/chat/ChatLayout';
 import { getClient } from '../lib/api/client';
 import { WidgetProvider } from './WidgetContext';
+import { WidgetStoreProvider } from './WidgetStoreContext';
 
 /**
  * Widget Configuration Interface
@@ -102,7 +103,7 @@ class CustomGPTWidget {
   private root: any = null;
   private config: CustomGPTWidgetConfig;
   private isOpen: boolean = false;
-  private sessionId: string;
+  public sessionId: string;
   private currentConversationId: string | null = null;
   private instanceKey?: string;
   private conversationRefreshKey: number = 0;
@@ -442,37 +443,39 @@ class CustomGPTWidget {
       const widgetKey = `widget_${this.sessionId}`;
 
       return (
-        <WidgetProvider widgetInstance={widgetRef}>
-          <div className={`customgpt-widget-wrapper widget-mode ${this.config.mode}-mode`}>
-            <ChatLayout
-              mode={this.config.mode === 'embedded' ? 'widget' : 'floating'}
-              onClose={this.config.mode === 'floating' ? handleClose : undefined}
-              showSidebar={false} // Disable sidebar for widget mode
-              className="w-full h-full"
-              // Pass conversation management configuration
-              enableConversationManagement={this.config.enableConversationManagement}
-              maxConversations={this.config.maxConversations}
-              sessionId={this.sessionId}
-              threadId={currentConvId} // Pass current conversation ID
-              onConversationChange={this.config.onConversationChange}
-              onMessage={this.config.onMessage}
-              // Pass widget instance for isolated conversation management
-              widgetInstance={this.config.isolateConversations !== false ? widgetRef : undefined}
-              // Pass current conversations for isolated mode
-              conversations={this.config.isolateConversations !== false ? this.getConversations() : undefined}
-              currentConversation={this.config.isolateConversations !== false && this.currentConversationId ? 
-                this.getConversations().find(c => c.id === this.currentConversationId) : undefined}
-              // Pass refresh key to trigger ConversationManager updates
-              conversationRefreshKey={this.conversationRefreshKey}
-            />
-            <Toaster 
-              position="top-center" 
-              toastOptions={{
-                style: { zIndex: 10000 }
-              }}
-            />
-          </div>
-        </WidgetProvider>
+        <WidgetStoreProvider sessionId={this.sessionId}>
+          <WidgetProvider widgetInstance={widgetRef}>
+            <div className={`customgpt-widget-wrapper widget-mode ${this.config.mode}-mode`}>
+              <ChatLayout
+                mode={this.config.mode === 'embedded' ? 'widget' : 'floating'}
+                onClose={this.config.mode === 'floating' ? handleClose : undefined}
+                showSidebar={false} // Disable sidebar for widget mode
+                className="w-full h-full"
+                // Pass conversation management configuration
+                enableConversationManagement={this.config.enableConversationManagement}
+                maxConversations={this.config.maxConversations}
+                sessionId={this.sessionId}
+                threadId={currentConvId} // Pass current conversation ID
+                onConversationChange={this.config.onConversationChange}
+                onMessage={this.config.onMessage}
+                // Pass widget instance for isolated conversation management
+                widgetInstance={this.config.isolateConversations !== false ? widgetRef : undefined}
+                // Pass current conversations for isolated mode
+                conversations={this.config.isolateConversations !== false ? this.getConversations() : undefined}
+                currentConversation={this.config.isolateConversations !== false && this.currentConversationId ? 
+                  this.getConversations().find(c => c.id === this.currentConversationId) : undefined}
+                // Pass refresh key to trigger ConversationManager updates
+                conversationRefreshKey={this.conversationRefreshKey}
+              />
+              <Toaster 
+                position="top-center" 
+                toastOptions={{
+                  style: { zIndex: 10000 }
+                }}
+              />
+            </div>
+          </WidgetProvider>
+        </WidgetStoreProvider>
       );
     };
 

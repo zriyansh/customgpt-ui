@@ -51,9 +51,9 @@ import {
 import { toast } from 'sonner';
 
 import type { Agent } from '@/types';
-import { useAgentStore } from '@/store';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
+import { useAgentStore } from '@/hooks/useWidgetStore';
 
 /**
  * Props for AgentSelector component

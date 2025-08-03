@@ -62,7 +62,7 @@ import {
 import { toast } from 'sonner';
 
 import type { Conversation } from '@/types';
-import { useConversationStore, useAgentStore, useMessageStore } from '@/store';
+import { useConversationStore, useAgentStore, useMessageStore } from '@/hooks/useWidgetStore';
 import { cn, formatTimestamp, generateConversationName } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { logger } from '@/lib/logger';

@@ -81,19 +81,20 @@
         <h1>Multi-Widget Isolation Test</h1>
         
         <div class="info">
-            <p><strong>Test Scenario:</strong> Two independent CustomGPT widgets on the same page</p>
-            <p><strong>Expected Behavior:</strong> Each widget should maintain its own conversation list independently</p>
+            <p><strong>Test Scenario:</strong> Two independent CustomGPT widgets with the SAME Agent ID</p>
+            <p><strong>Expected Behavior:</strong> Each widget should maintain its own conversation list independently even with same agent</p>
             <ul>
+                <li>Both widgets use Agent ID: 123</li>
                 <li>Creating a conversation in Widget 1 should NOT appear in Widget 2</li>
-                <li>Both widgets should be able to create and manage conversations independently</li>
-                <li>The floating button should work alongside the embedded widget</li>
+                <li>Each widget has its own message store and conversation store</li>
+                <li>Full store isolation is implemented - no data sharing</li>
             </ul>
         </div>
         
         <!-- Embedded Widget -->
         <div class="widget-section">
             <div class="section-title">
-                Embedded Widget (Agent 1)
+                Embedded Widget (Agent ID: 123)
                 <span class="status active">ACTIVE</span>
             </div>
             <div id="embedded-widget" class="widget-container"></div>
@@ -102,7 +103,7 @@
         <!-- Floating Button Info -->
         <div class="widget-section">
             <div class="section-title">
-                Floating Button (Agent 2)
+                Floating Button (Agent ID: 123 - Same as Embedded)
                 <span class="status active">ACTIVE</span>
             </div>
             <p>The floating button appears in the bottom-right corner. Click it to open the chat.</p>
@@ -118,7 +119,7 @@
         // Initialize embedded widget
         const embeddedWidget = window.CustomGPTWidget.init({
             apiKey: 'demo-api-key',
-            agentId: '123',
+            agentId: '123',  // Same agent ID
             agentName: 'Embedded Assistant',
             mode: 'embedded',
             containerId: 'embedded-widget',
@@ -128,10 +129,10 @@
             height: '600px'
         });
         
-        // Initialize floating widget with different agent
+        // Initialize floating widget with SAME agent ID
         const floatingWidget = window.CustomGPTWidget.init({
             apiKey: 'demo-api-key',
-            agentId: '456',
+            agentId: '123',  // Same agent ID - testing isolation
             agentName: 'Floating Assistant',
             mode: 'floating',
             position: 'bottom-right',
@@ -146,6 +147,20 @@
             embedded: embeddedWidget.sessionId,
             floating: floatingWidget.sessionId
         });
+        
+        // Verify isolation - sessions should be different
+        if (embeddedWidget.sessionId === floatingWidget.sessionId) {
+            console.error('WARNING: Sessions are the same! Isolation may not be working.');
+        } else {
+            console.log('✅ Sessions are different - isolation is working');
+        }
+        
+        // Test conversation isolation
+        setTimeout(() => {
+            console.log('Testing conversation isolation...');
+            console.log('Embedded conversations:', embeddedWidget.getConversations());
+            console.log('Floating conversations:', floatingWidget.getConversations());
+        }, 2000);
     </script>
 </body>
 </html>

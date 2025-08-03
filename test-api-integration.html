@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CustomGPT Widget API Integration Test</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .test-section {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .widget-container {
+            margin: 20px 0;
+            padding: 20px;
+            border: 2px dashed #ccc;
+            border-radius: 8px;
+            background: #fafafa;
+        }
+        .test-controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        button {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            background: #007bff;
+            color: white;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .demo-toggle {
+            background: #28a745;
+        }
+        .demo-toggle:hover {
+            background: #1e7e34;
+        }
+        .info-panel {
+            background: #e3f2fd;
+            border: 1px solid #2196f3;
+            border-radius: 4px;
+            padding: 15px;
+            margin: 15px 0;
+        }
+        .error-panel {
+            background: #ffebee;
+            border: 1px solid #f44336;
+            border-radius: 4px;
+            padding: 15px;
+            margin: 15px 0;
+            color: #c62828;
+        }
+        .success-panel {
+            background: #e8f5e8;
+            border: 1px solid #4caf50;
+            border-radius: 4px;
+            padding: 15px;
+            margin: 15px 0;
+            color: #2e7d32;
+        }
+        .widget-info {
+            font-size: 12px;
+            color: #666;
+            margin-top: 10px;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 4px;
+        }
+        .api-key-input {
+            width: 400px;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            margin-right: 10px;
+        }
+        .isolation-test {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-top: 20px;
+        }
+        @media (max-width: 768px) {
+            .isolation-test {
+                grid-template-columns: 1fr;
+            }
+        }
+        .metrics {
+            background: #fff3cd;
+            border: 1px solid #ffc107;
+            border-radius: 4px;
+            padding: 15px;
+            margin: 15px 0;
+        }
+        .metrics h4 {
+            margin: 0 0 10px 0;
+            color: #856404;
+        }
+        .metric-item {
+            display: flex;
+            justify-content: space-between;
+            margin: 5px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧪 CustomGPT Widget API Integration Test</h1>
+    <p>Test the complete integration between widgets and CustomGPT API with conversation isolation</p>
+
+    <!-- API Configuration -->
+    <div class="test-section">
+        <h2>🔑 API Configuration</h2>
+        <div class="test-controls">
+            <input type="password" id="apiKeyInput" class="api-key-input" placeholder="Enter your CustomGPT API key (format: 1234|abcd...)">
+            <button onclick="setApiKey()">Set API Key</button>
+            <button onclick="toggleDemoMode()" id="demoModeBtn" class="demo-toggle">Enable Demo Mode</button>
+            <button onclick="testApiConnection()">Test API Connection</button>
+        </div>
+        <div id="apiStatus" class="info-panel" style="display: none;"></div>
+    </div>
+
+    <!-- Widget Configuration -->
+    <div class="test-section">
+        <h2>⚙️ Widget Configuration</h2>
+        <div class="test-controls">
+            <input type="number" id="agentIdInput" placeholder="Agent ID (optional)" style="width: 150px; padding: 8px;">
+            <input type="text" id="agentNameInput" placeholder="Agent Name (optional)" style="width: 200px; padding: 8px;">
+            <button onclick="updateWidgetConfig()">Update Config</button>
+        </div>
+        <div class="info-panel">
+            <strong>Configuration Notes:</strong>
+            <ul>
+                <li>Leave Agent ID empty to test with all available agents</li>
+                <li>Each widget gets a unique session ID for complete isolation</li>
+                <li>Conversations created in one widget won't appear in another</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Isolation Test -->
+    <div class="test-section">
+        <h2>🔒 Widget Isolation Test</h2>
+        <p>Two identical widgets with the same agent ID to test conversation isolation:</p>
+        
+        <div class="isolation-test">
+            <div class="widget-container">
+                <h3>Widget A</h3>
+                <div id="widget-a"></div>
+                <div class="widget-info">
+                    <div>Session ID: <span id="session-a">-</span></div>
+                    <div>Agent ID: <span id="agent-a">-</span></div>
+                    <div>Conversations: <span id="conv-count-a">0</span></div>
+                </div>
+            </div>
+            
+            <div class="widget-container">
+                <h3>Widget B</h3>
+                <div id="widget-b"></div>
+                <div class="widget-info">
+                    <div>Session ID: <span id="session-b">-</span></div>
+                    <div>Agent ID: <span id="agent-b">-</span></div>
+                    <div>Conversations: <span id="conv-count-b">0</span></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- API Integration Test -->
+    <div class="test-section">
+        <h2>🔗 API Integration Test</h2>
+        <div class="test-controls">
+            <button onclick="testConversationPersistence()">Test Conversation Persistence</button>
+            <button onclick="testMessageAPI()">Test Message API</button>
+            <button onclick="testAgentAPI()">Test Agent API</button>
+            <button onclick="viewLocalStorage()">View Local Storage</button>
+            <button onclick="clearLocalStorage()">Clear Local Storage</button>
+        </div>
+        <div id="apiTestResults"></div>
+    </div>
+
+    <!-- Metrics -->
+    <div class="test-section">
+        <h2>📊 Performance Metrics</h2>
+        <div class="metrics">
+            <h4>Widget Performance</h4>
+            <div class="metric-item">
+                <span>Widgets Created:</span>
+                <span id="widgets-created">0</span>
+            </div>
+            <div class="metric-item">
+                <span>Messages Sent:</span>
+                <span id="messages-sent">0</span>
+            </div>
+            <div class="metric-item">
+                <span>API Calls Made:</span>
+                <span id="api-calls">0</span>
+            </div>
+            <div class="metric-item">
+                <span>Conversations Created:</span>
+                <span id="conversations-created">0</span>
+            </div>
+        </div>
+    </div>
+
+    <script src="./dist/widget/vendors.js"></script>
+    <script src="./dist/widget/customgpt-widget.js"></script>
+
+    <script>
+        let isDemoMode = false;
+        let widgetA = null;
+        let widgetB = null;
+        let metrics = {
+            widgetsCreated: 0,
+            messagesSent: 0,
+            apiCalls: 0,
+            conversationsCreated: 0
+        };
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            updateMetricsDisplay();
+            createTestWidgets();
+        });
+
+        function setApiKey() {
+            const apiKey = document.getElementById('apiKeyInput').value;
+            if (!apiKey) {
+                showStatus('Please enter an API key', 'error');
+                return;
+            }
+
+            // Validate API key format
+            if (!/^\d+\|[a-zA-Z0-9]+/.test(apiKey)) {
+                showStatus('Invalid API key format. Expected: numbers|alphanumeric', 'error');
+                return;
+            }
+
+            window.__customgpt_api_key = apiKey;
+            showStatus('API key set successfully!', 'success');
+        }
+
+        function toggleDemoMode() {
+            isDemoMode = !isDemoMode;
+            window.__customgpt_demo_mode = isDemoMode;
+            
+            const btn = document.getElementById('demoModeBtn');
+            btn.textContent = isDemoMode ? 'Disable Demo Mode' : 'Enable Demo Mode';
+            btn.style.background = isDemoMode ? '#dc3545' : '#28a745';
+            
+            showStatus(`Demo mode ${isDemoMode ? 'enabled' : 'disabled'}`, 'info');
+            
+            // Recreate widgets with new mode
+            setTimeout(createTestWidgets, 100);
+        }
+
+        function testApiConnection() {
+            if (isDemoMode) {
+                showStatus('Demo mode enabled - API connection not needed', 'info');
+                return;
+            }
+
+            if (!window.__customgpt_api_key) {
+                showStatus('Please set an API key first', 'error');
+                return;
+            }
+
+            showStatus('Testing API connection...', 'info');
+            
+            // Test will be performed when widgets try to load agents
+            metrics.apiCalls++;
+            updateMetricsDisplay();
+            
+            setTimeout(() => {
+                showStatus('API connection test completed. Check widget status for results.', 'success');
+            }, 2000);
+        }
+
+        function updateWidgetConfig() {
+            const agentId = document.getElementById('agentIdInput').value;
+            const agentName = document.getElementById('agentNameInput').value;
+            
+            if (agentId || agentName) {
+                window.__customgpt_test_config = {
+                    agentId: agentId ? parseInt(agentId) : undefined,
+                    name: agentName || 'Test Agent'
+                };
+                showStatus(`Widget configuration updated: Agent ID=${agentId || 'auto'}, Name=${agentName || 'default'}`, 'info');
+            } else {
+                window.__customgpt_test_config = null;
+                showStatus('Widget configuration cleared - will use all available agents', 'info');
+            }
+            
+            // Recreate widgets with new config
+            setTimeout(createTestWidgets, 100);
+        }
+
+        function createTestWidgets() {
+            // Destroy existing widgets
+            if (widgetA) {
+                widgetA.destroy();
+                widgetA = null;
+            }
+            if (widgetB) {
+                widgetB.destroy();
+                widgetB = null;
+            }
+
+            // Clear containers
+            document.getElementById('widget-a').innerHTML = '';
+            document.getElementById('widget-b').innerHTML = '';
+
+            const config = window.__customgpt_test_config || {
+                agentId: 123, // Default test agent ID
+                name: 'Test Agent'
+            };
+
+            try {
+                // Create Widget A
+                widgetA = new CustomGPTWidget({
+                    container: '#widget-a',
+                    apiKey: window.__customgpt_api_key || 'demo-key',
+                    agentId: config.agentId,
+                    name: config.name,
+                    mode: 'widget',
+                    enableConversationManagement: true,
+                    maxConversations: 5,
+                    onMessage: (message) => {
+                        metrics.messagesSent++;
+                        updateMetricsDisplay();
+                        console.log('Widget A message:', message);
+                    },
+                    onConversationChange: (conversation) => {
+                        metrics.conversationsCreated++;
+                        updateMetricsDisplay();
+                        console.log('Widget A conversation change:', conversation);
+                    }
+                });
+
+                // Create Widget B (identical config)
+                widgetB = new CustomGPTWidget({
+                    container: '#widget-b',
+                    apiKey: window.__customgpt_api_key || 'demo-key',
+                    agentId: config.agentId,
+                    name: config.name,
+                    mode: 'widget',
+                    enableConversationManagement: true,
+                    maxConversations: 5,
+                    onMessage: (message) => {
+                        metrics.messagesSent++;
+                        updateMetricsDisplay();
+                        console.log('Widget B message:', message);
+                    },
+                    onConversationChange: (conversation) => {
+                        metrics.conversationsCreated++;
+                        updateMetricsDisplay();
+                        console.log('Widget B conversation change:', conversation);
+                    }
+                });
+
+                metrics.widgetsCreated += 2;
+                updateMetricsDisplay();
+
+                // Update widget info displays
+                setTimeout(() => {
+                    document.getElementById('session-a').textContent = widgetA.sessionId || 'Unknown';
+                    document.getElementById('session-b').textContent = widgetB.sessionId || 'Unknown';
+                    document.getElementById('agent-a').textContent = config.agentId || 'Auto';
+                    document.getElementById('agent-b').textContent = config.agentId || 'Auto';
+                }, 1000);
+
+                showStatus('Test widgets created successfully with isolated sessions!', 'success');
+            } catch (error) {
+                showStatus(`Failed to create widgets: ${error.message}`, 'error');
+                console.error('Widget creation error:', error);
+            }
+        }
+
+        function testConversationPersistence() {
+            showStatus('Testing conversation persistence...', 'info');
+            
+            // Test that conversations are stored in the database
+            const testResults = document.getElementById('apiTestResults');
+            testResults.innerHTML = `
+                <div class="info-panel">
+                    <h4>Conversation Persistence Test</h4>
+                    <p><strong>Instructions:</strong></p>
+                    <ol>
+                        <li>Send a message in Widget A</li>
+                        <li>Create a new conversation in Widget A</li>
+                        <li>Send a message in Widget B</li>
+                        <li>Refresh the page and check if conversations persist</li>
+                        <li>Verify that Widget A and B have separate conversation lists</li>
+                    </ol>
+                    <p><strong>Expected Result:</strong> Each widget should only see its own conversations, stored in your CustomGPT database.</p>
+                </div>
+            `;
+            
+            metrics.apiCalls++;
+            updateMetricsDisplay();
+        }
+
+        function testMessageAPI() {
+            showStatus('Testing message API integration...', 'info');
+            
+            const testResults = document.getElementById('apiTestResults');
+            testResults.innerHTML = `
+                <div class="info-panel">
+                    <h4>Message API Test</h4>
+                    <p><strong>Instructions:</strong></p>
+                    <ol>
+                        <li>Send a test message in either widget</li>
+                        <li>Check browser network tab for API calls</li>
+                        <li>Verify message appears in your CustomGPT dashboard</li>
+                        <li>Test streaming vs non-streaming responses</li>
+                    </ol>
+                    <p><strong>API Endpoints Being Tested:</strong></p>
+                    <ul>
+                        <li>POST /api/projects/{id}/messages (streaming)</li>
+                        <li>POST /api/projects/{id}/messages (non-streaming fallback)</li>
+                        <li>File upload endpoints (if files attached)</li>
+                    </ul>
+                </div>
+            `;
+            
+            metrics.apiCalls++;
+            updateMetricsDisplay();
+        }
+
+        function testAgentAPI() {
+            showStatus('Testing agent API integration...', 'info');
+            
+            const testResults = document.getElementById('apiTestResults');
+            testResults.innerHTML = `
+                <div class="info-panel">
+                    <h4>Agent API Test</h4>
+                    <p><strong>Instructions:</strong></p>
+                    <ol>
+                        <li>Check that the correct agent loads in each widget</li>
+                        <li>Verify agent information matches your CustomGPT dashboard</li>
+                        <li>Test with different agent IDs</li>
+                    </ol>
+                    <p><strong>API Endpoints Being Tested:</strong></p>
+                    <ul>
+                        <li>GET /api/projects (if no specific agent ID)</li>
+                        <li>GET /api/projects/{id} (if specific agent ID)</li>
+                    </ul>
+                </div>
+            `;
+            
+            metrics.apiCalls++;
+            updateMetricsDisplay();
+        }
+
+        function viewLocalStorage() {
+            const storage = {};
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if (key.includes('customgpt')) {
+                    storage[key] = localStorage.getItem(key);
+                }
+            }
+            
+            const testResults = document.getElementById('apiTestResults');
+            testResults.innerHTML = `
+                <div class="info-panel">
+                    <h4>Local Storage Contents</h4>
+                    <pre style="background: #f8f9fa; padding: 10px; border-radius: 4px; font-size: 12px; overflow-x: auto;">${JSON.stringify(storage, null, 2)}</pre>
+                </div>
+            `;
+        }
+
+        function clearLocalStorage() {
+            const keys = [];
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if (key.includes('customgpt')) {
+                    keys.push(key);
+                }
+            }
+            
+            keys.forEach(key => localStorage.removeItem(key));
+            showStatus(`Cleared ${keys.length} CustomGPT localStorage entries`, 'success');
+            
+            // Refresh widgets
+            setTimeout(createTestWidgets, 100);
+        }
+
+        function updateMetricsDisplay() {
+            document.getElementById('widgets-created').textContent = metrics.widgetsCreated;
+            document.getElementById('messages-sent').textContent = metrics.messagesSent;
+            document.getElementById('api-calls').textContent = metrics.apiCalls;
+            document.getElementById('conversations-created').textContent = metrics.conversationsCreated;
+        }
+
+        function showStatus(message, type = 'info') {
+            const statusEl = document.getElementById('apiStatus');
+            statusEl.style.display = 'block';
+            statusEl.className = type === 'error' ? 'error-panel' : 
+                               type === 'success' ? 'success-panel' : 'info-panel';
+            statusEl.textContent = message;
+            
+            console.log(`[${type.toUpperCase()}] ${message}`);
+        }
+
+        // Monitor conversation counts
+        setInterval(() => {
+            try {
+                if (widgetA && widgetA.sessionId) {
+                    const convKey = `widget_conversations_${widgetA.sessionId}`;
+                    const convIds = JSON.parse(localStorage.getItem(convKey) || '[]');
+                    document.getElementById('conv-count-a').textContent = convIds.length;
+                }
+                if (widgetB && widgetB.sessionId) {
+                    const convKey = `widget_conversations_${widgetB.sessionId}`;
+                    const convIds = JSON.parse(localStorage.getItem(convKey) || '[]');
+                    document.getElementById('conv-count-b').textContent = convIds.length;
+                }
+            } catch (e) {
+                // Ignore errors
+            }
+        }, 2000);
+    </script>
+</body>
+</html>

@@ -29,7 +29,6 @@ import { toast } from 'sonner';
 
 import type { ChatMessage, Citation, Agent } from '@/types';
 import { cn } from '@/lib/utils';
-import { useMessageStore, useAgentStore, useConversationStore } from '@/store';
 import { Message } from './Message';
 import { ChatInput } from './ChatInput';
 import { TypingIndicator } from './TypingIndicator';
@@ -38,6 +37,7 @@ import { CitationDetailsModal } from './CitationDetailsModal';
 import { ConversationManager } from './ConversationManager';
 import { logger } from '@/lib/logger';
 import { useWidgetSafe } from '@/widget/WidgetContext';
+import { useMessageStore, useConversationStore, useAgentStore } from '@/hooks/useWidgetStore';
 
 /**
  * Example prompts shown to users when starting a new conversation

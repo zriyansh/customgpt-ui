@@ -39,9 +39,9 @@
 
 import React, { useState, useEffect } from 'react';
 import type { Agent } from '@/types';
-import { useConversationStore, useMessageStore } from '@/store';
 import { ChatContainer } from './ChatContainer';
 import { ConversationSidebar } from './ConversationSidebar';
+import { useConversationStore, useMessageStore } from '@/hooks/useWidgetStore';
 
 /**
  * Props for ChatLayout component

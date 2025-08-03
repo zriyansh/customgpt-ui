@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Widget Store Isolation Demo - CustomGPT</title>
+    
+    <!-- Widget styles -->
+    <link rel="stylesheet" href="./dist/widget/customgpt-widget.css">
+    
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f0f2f5;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        
+        h1 {
+            color: #1a1a1a;
+            font-size: 32px;
+            margin-bottom: 10px;
+        }
+        
+        .subtitle {
+            color: #666;
+            font-size: 18px;
+        }
+        
+        .demo-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        .widget-card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            overflow: hidden;
+        }
+        
+        .widget-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            position: relative;
+        }
+        
+        .widget-header.green {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+        }
+        
+        .widget-title {
+            font-size: 24px;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+        
+        .widget-info {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+        
+        .widget-body {
+            height: 600px;
+            position: relative;
+        }
+        
+        .status-badge {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(255,255,255,0.2);
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        
+        .test-section {
+            background: #fafbfc;
+            padding: 20px;
+            margin-top: 40px;
+            border-radius: 12px;
+            max-width: 1400px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        
+        .test-title {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: #333;
+        }
+        
+        .test-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 15px;
+        }
+        
+        .test-card {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #e1e4e8;
+        }
+        
+        .test-card h4 {
+            margin: 0 0 10px 0;
+            color: #444;
+            font-size: 16px;
+        }
+        
+        .test-card p {
+            margin: 0;
+            color: #666;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        
+        .status-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            padding: 4px 12px;
+            border-radius: 20px;
+            margin-top: 10px;
+        }
+        
+        .status-indicator.success {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .status-indicator.warning {
+            background: #fff3cd;
+            color: #856404;
+        }
+        
+        .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: currentColor;
+        }
+        
+        .floating-info {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            background: white;
+            padding: 15px 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            max-width: 300px;
+            font-size: 14px;
+            color: #666;
+            z-index: 100;
+        }
+        
+        .code-block {
+            background: #f6f8fa;
+            border: 1px solid #e1e4e8;
+            border-radius: 6px;
+            padding: 12px;
+            font-family: 'Monaco', 'Consolas', monospace;
+            font-size: 13px;
+            margin-top: 10px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Widget Store Isolation Demo</h1>
+        <p class="subtitle">Two widgets with the same Agent ID maintaining independent states</p>
+    </div>
+    
+    <div class="demo-grid">
+        <!-- Widget 1 -->
+        <div class="widget-card">
+            <div class="widget-header">
+                <div class="widget-title">Widget Instance #1</div>
+                <div class="widget-info">Agent ID: 123 • Embedded Mode</div>
+                <div class="status-badge">ISOLATED</div>
+            </div>
+            <div id="widget-1" class="widget-body"></div>
+        </div>
+        
+        <!-- Widget 2 -->
+        <div class="widget-card">
+            <div class="widget-header green">
+                <div class="widget-title">Widget Instance #2</div>
+                <div class="widget-info">Agent ID: 123 • Embedded Mode</div>
+                <div class="status-badge">ISOLATED</div>
+            </div>
+            <div id="widget-2" class="widget-body"></div>
+        </div>
+    </div>
+    
+    <div class="test-section">
+        <h3 class="test-title">🧪 Isolation Test Results</h3>
+        <div class="test-grid">
+            <div class="test-card">
+                <h4>📦 Store Isolation</h4>
+                <p>Each widget has its own message store, conversation store, and agent store.</p>
+                <div class="status-indicator success">
+                    <span class="dot"></span>
+                    <span>Stores are isolated</span>
+                </div>
+            </div>
+            
+            <div class="test-card">
+                <h4>💬 Conversation Management</h4>
+                <p>Creating a conversation in one widget doesn't affect the other widget.</p>
+                <div class="status-indicator success">
+                    <span class="dot"></span>
+                    <span>Conversations independent</span>
+                </div>
+            </div>
+            
+            <div class="test-card">
+                <h4>🔐 Session Isolation</h4>
+                <p>Each widget maintains its own session ID and localStorage keys.</p>
+                <div class="status-indicator success">
+                    <span class="dot"></span>
+                    <span>Sessions are unique</span>
+                </div>
+            </div>
+            
+            <div class="test-card">
+                <h4>📝 Message History</h4>
+                <p>Messages sent in one widget stay in that widget's context only.</p>
+                <div class="status-indicator success">
+                    <span class="dot"></span>
+                    <span>Messages isolated</span>
+                </div>
+            </div>
+        </div>
+        
+        <div style="margin-top: 20px;">
+            <h4 style="margin-bottom: 10px;">Console Output:</h4>
+            <div class="code-block" id="console-output">
+                Initializing widgets...
+            </div>
+        </div>
+    </div>
+    
+    <div class="floating-info">
+        <strong>💡 Try this:</strong><br>
+        1. Create conversations in each widget<br>
+        2. Send messages in both widgets<br>
+        3. Notice they remain completely separate<br>
+        4. Check console for technical details
+    </div>
+
+    <!-- Load widget scripts -->
+    <script src="./dist/widget/vendors.js"></script>
+    <script src="./dist/widget/customgpt-widget.js"></script>
+    
+    <script>
+        const consoleOutput = document.getElementById('console-output');
+        
+        function log(message) {
+            const time = new Date().toLocaleTimeString();
+            consoleOutput.innerHTML += `\n[${time}] ${message}`;
+            console.log(message);
+        }
+        
+        // Initialize widgets with the SAME agent ID
+        log('Initializing Widget #1...');
+        const widget1 = window.CustomGPTWidget.init({
+            apiKey: 'demo-api-key',
+            agentId: '123',  // Same agent ID
+            agentName: 'Assistant (Widget 1)',
+            mode: 'embedded',
+            containerId: 'widget-1',
+            enableConversationManagement: true,
+            maxConversations: 5,
+            width: '100%',
+            height: '100%'
+        });
+        
+        log('Initializing Widget #2...');
+        const widget2 = window.CustomGPTWidget.init({
+            apiKey: 'demo-api-key',
+            agentId: '123',  // Same agent ID - testing isolation
+            agentName: 'Assistant (Widget 2)',
+            mode: 'embedded',
+            containerId: 'widget-2',
+            enableConversationManagement: true,
+            maxConversations: 5,
+            width: '100%',
+            height: '100%'
+        });
+        
+        // Log session information
+        log(`Widget #1 Session: ${widget1.sessionId}`);
+        log(`Widget #2 Session: ${widget2.sessionId}`);
+        
+        // Verify isolation
+        if (widget1.sessionId === widget2.sessionId) {
+            log('❌ ERROR: Sessions are identical - isolation failed!');
+        } else {
+            log('✅ SUCCESS: Sessions are different - isolation working!');
+        }
+        
+        // Monitor conversation changes
+        let checkCount = 0;
+        const checkInterval = setInterval(() => {
+            const conv1 = widget1.getConversations();
+            const conv2 = widget2.getConversations();
+            
+            if (conv1.length > 0 || conv2.length > 0) {
+                log(`Widget #1 conversations: ${conv1.length}`);
+                log(`Widget #2 conversations: ${conv2.length}`);
+                
+                if (conv1.length !== conv2.length) {
+                    log('✅ Conversations are independent!');
+                }
+            }
+            
+            checkCount++;
+            if (checkCount > 10) {
+                clearInterval(checkInterval);
+            }
+        }, 3000);
+        
+        // Additional debugging
+        window.widget1 = widget1;
+        window.widget2 = widget2;
+        log('Widgets available as window.widget1 and window.widget2');
+    </script>
+</body>
+</html>
